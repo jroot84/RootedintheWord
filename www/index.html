@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Rooted in the Word — Reading Journal</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --serif-display:'Source Serif 4', Georgia, serif;
+  --serif-read:'Lora', Georgia, serif;
+  --sans-read:'Atkinson Hyperlegible', Arial, sans-serif;
+  --ui:'Inter', system-ui, -apple-system, sans-serif;
+  --radius:14px;
+  --radius-sm:9px;
+}
+html[data-theme="light"]{
+  --bg:#F6F1E3; --surface:#FFFFFF; --surface-2:#FBF7EC; --surface-3:#F0E9D6;
+  --ink:#242219; --ink-soft:#655F4E; --ink-faint:#948C74;
+  --border:#E3D9BE; --border-strong:#CFC19C;
+  --gold:#9C7423; --gold-2:#C79A3C; --ribbon:#7C2B3F; --ribbon-2:#9C4257;
+  --green:#3C783A; --green-bg:#E4EEE0; --danger:#A6392C;
+  --shadow-sm:0 1px 2px rgba(40,32,10,.07); --shadow-md:0 10px 30px -12px rgba(40,32,10,.22);
+  --scrim:rgba(30,24,12,.42);
+}
+html[data-theme="dark"]{
+  --bg:#15141A; --surface:#1D1C24; --surface-2:#232129; --surface-3:#2B2932;
+  --ink:#EFEADA; --ink-soft:#AAA394; --ink-faint:#726C60;
+  --border:#332F3B; --border-strong:#403B49;
+  --gold:#D9AE55; --gold-2:#8E6E2E; --ribbon:#D97B92; --ribbon-2:#9C4257;
+  --green:#6FBE6C; --green-bg:#22301F; --danger:#E17361;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.35); --shadow-md:0 14px 36px -14px rgba(0,0,0,.55);
+  --scrim:rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);-webkit-font-smoothing:antialiased;transition:background .25s ease,color .25s ease;}
+button{font-family:inherit;cursor:pointer;}
+input,textarea,select{font-family:inherit;}
+::selection{background:rgba(156,116,35,.28);}
+a{color:var(--gold);}
+.hidden{display:none !important;}
+
+#appShell{max-width:760px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding-bottom:84px;}
+
+.ribbon-wrap{position:sticky;top:0;z-index:20;background:var(--bg);padding:0 18px;}
+.ribbon-track{position:relative;height:10px;background:var(--surface-3);border-radius:6px;overflow:visible;margin-top:8px;}
+.ribbon-fill{position:relative;height:100%;border-radius:6px 0 0 6px;background:linear-gradient(90deg,var(--ribbon),var(--gold-2));transition:width .4s ease;min-width:10px;}
+.ribbon-fill::after{content:"";position:absolute;right:-8px;top:0;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--gold-2);}
+.ribbon-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-faint);margin:6px 2px 2px;letter-spacing:.02em;}
+
+header.top{padding:14px 18px 4px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+header.top .brand{display:flex;flex-direction:column;line-height:1.15;}
+header.top .brand b{font-family:var(--serif-display);font-size:19px;font-weight:600;letter-spacing:.01em;}
+header.top .brand span{font-size:12px;color:var(--ink-soft);}
+.streak-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:var(--shadow-sm);white-space:nowrap;}
+.streak-chip svg{width:14px;height:14px;}
+
+main#view{flex:1;padding:6px 18px 24px;}
+
+nav.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));max-width:760px;margin:0 auto;box-shadow:0 -6px 20px -14px rgba(0,0,0,.25);}
+nav.tabbar button{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 6px;color:var(--ink-faint);font-size:11px;font-weight:600;border-radius:10px;}
+nav.tabbar button svg{width:20px;height:20px;}
+nav.tabbar button.active{color:var(--gold);background:var(--surface-2);}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm);}
+.section-title{font-family:var(--serif-display);font-size:15px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin:22px 2px 10px;}
+.section-title:first-child{margin-top:4px;}
+.btn{border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:10px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+.btn:active{transform:translateY(1px);}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink);}
+html[data-theme="dark"] .btn.primary{background:var(--gold);color:#1D1C24;border-color:var(--gold);}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;}
+.btn.ghost{background:transparent;border-color:transparent;}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:transparent;}
+.btn.sm{padding:6px 10px;font-size:12.5px;border-radius:8px;}
+.btn:disabled{opacity:.45;pointer-events:none;}
+.icon-btn{border:none;background:var(--surface-2);border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);flex-shrink:0;}
+.icon-btn:disabled{opacity:.3;pointer-events:none;}
+.icon-btn svg{width:17px;height:17px;}
+.icon-btn.active{color:var(--gold);background:var(--surface-3);}
+
+#splash{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px;background:var(--bg);}
+.splash-inner{max-width:360px;width:100%;text-align:center;color:var(--ink);}
+.splash-mark{width:64px;height:64px;margin:0 auto 18px;border-radius:18px;background:linear-gradient(160deg,var(--ribbon),var(--gold-2));display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:var(--shadow-md);}
+.splash-mark svg{width:32px;height:32px;}
+.splash-inner h1{font-family:var(--serif-display);font-size:30px;margin:0 0 2px;font-weight:600;color:var(--ink);}
+.splash-tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;margin:0 0 26px;color:var(--ink-soft);}
+.splash-verse{font-family:var(--serif-read);font-style:italic;font-size:15.5px;line-height:1.55;color:var(--ink-soft);margin:0;}
+.splash-verse span{display:block;font-style:normal;font-size:12px;opacity:.8;margin-top:6px;letter-spacing:.03em;color:var(--ink-faint);}
+#splash .btn.primary{width:100%;justify-content:center;padding:13px;margin-top:26px;}
+
+#onboarding{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px;}
+.ob-card{max-width:420px;width:100%;text-align:center;}
+.ob-mark{width:56px;height:56px;margin:0 auto 18px;border-radius:16px;background:linear-gradient(160deg,var(--ribbon),var(--gold-2));display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-md);}
+.ob-mark svg{width:28px;height:28px;color:#fff;}
+.ob-card h1{font-family:var(--serif-display);font-size:25px;margin:0 0 6px;}
+.ob-card p.sub{color:var(--ink-soft);font-size:14.5px;line-height:1.5;margin:0 0 22px;}
+.ob-card label{display:block;text-align:left;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.05em;}
+.ob-card input[type=date]{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);font-size:15px;}
+.ob-choice{display:flex;gap:8px;margin-top:6px;}
+.ob-choice button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);font-size:13px;font-weight:600;color:var(--ink-soft);}
+.ob-choice button.sel{border-color:var(--gold);color:var(--gold);background:var(--surface-2);}
+.ob-day-input{display:flex;align-items:center;gap:8px;margin-top:6px;}
+.ob-day-input input{width:80px;padding:10px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);font-size:15px;text-align:center;}
+
+.hero{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--shadow-md);position:relative;overflow:hidden;}
+.hero::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--ribbon),var(--gold-2));}
+.hero .eyebrow{font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+.hero .day-title{font-family:var(--serif-display);font-size:26px;margin:2px 0 2px;}
+.hero .day-date{color:var(--ink-soft);font-size:13.5px;margin-bottom:14px;}
+.schedule-note{font-size:12.5px;background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:10px;padding:8px 10px;color:var(--ink-soft);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+.schedule-note button{flex-shrink:0;}
+
+.reading-row{display:flex;align-items:flex-start;gap:12px;padding:12px 4px;border-top:1px solid var(--border);}
+.reading-row:first-of-type{border-top:none;}
+.chk{width:24px;height:24px;border-radius:7px;border:2px solid var(--border-strong);background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px;color:transparent;}
+.chk.done{background:var(--green);border-color:var(--green);color:#fff;}
+.chk svg{width:14px;height:14px;}
+.reading-main{flex:1;min-width:0;}
+.reading-tag{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);}
+.reading-ref{font-family:var(--serif-display);font-size:16.5px;margin-top:1px;}
+.reading-ref.done{text-decoration:line-through;color:var(--ink-faint);}
+.reading-actions{display:flex;gap:6px;flex-shrink:0;margin-top:2px;}
+
+.day-footer{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.note-box{margin-top:14px;}
+.note-box textarea{width:100%;min-height:150px;resize:vertical;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:12px 14px;font-size:14px;line-height:1.55;font-family:var(--ui);}
+.note-box .note-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.note-box label{font-size:11.5px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px;margin:0;}
+
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;}
+.stat{background:var(--surface-2);border-radius:12px;padding:10px 8px;text-align:center;}
+.stat b{display:block;font-family:var(--serif-display);font-size:20px;}
+.stat span{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+
+.celebrate{text-align:center;padding:36px 12px;}
+.celebrate svg{width:48px;height:48px;color:var(--gold);margin-bottom:10px;}
+.celebrate h2{font-family:var(--serif-display);font-size:22px;margin:0 0 6px;}
+.celebrate p{color:var(--ink-soft);font-size:14px;}
+
+.seg{display:flex;background:var(--surface-2);border-radius:11px;padding:3px;gap:3px;margin-bottom:14px;}
+.seg button{flex:1;padding:8px;border:none;background:none;border-radius:9px;font-size:13px;font-weight:600;color:var(--ink-soft);}
+.seg button.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm);}
+
+.month-group{margin-bottom:6px;}
+.month-head{font-family:var(--serif-display);font-size:16px;padding:14px 4px 6px;color:var(--ink);}
+.plan-row{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:10px;background:var(--surface);border:1px solid var(--border);margin-bottom:6px;}
+.plan-row .pd-num{width:34px;height:34px;border-radius:9px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;color:var(--ink-soft);flex-shrink:0;}
+.plan-row.complete .pd-num{background:var(--green-bg);color:var(--green);}
+.plan-row.today{border-color:var(--gold);}
+.plan-row .pd-body{flex:1;min-width:0;}
+.plan-row .pd-date{font-size:11.5px;color:var(--ink-faint);font-weight:600;}
+.plan-row .pd-refs{font-size:13px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.plan-row .pd-flags{display:flex;gap:4px;flex-shrink:0;}
+.plan-row .pd-flags svg{width:15px;height:15px;}
+
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cal-nav .lbl{font-family:var(--serif-display);font-size:17px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-dow{text-align:center;font-size:10.5px;color:var(--ink-faint);font-weight:700;padding-bottom:4px;}
+.cal-cell{aspect-ratio:1;border-radius:9px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12.5px;gap:3px;position:relative;}
+.cal-cell.out{opacity:0;pointer-events:none;}
+.cal-cell.disabled{color:var(--ink-faint);background:var(--surface-2);border-style:dashed;}
+.cal-cell.today{border-color:var(--gold);border-width:2px;}
+.cal-cell .dot{width:6px;height:6px;border-radius:50%;background:var(--border-strong);}
+.cal-cell.complete .dot{background:var(--green);}
+.cal-cell.partial .dot{background:var(--gold-2);}
+.cal-cell .star{position:absolute;top:2px;right:3px;width:9px;height:9px;color:var(--gold);}
+
+.search-box{position:relative;margin-bottom:14px;}
+.search-box input{width:100%;padding:11px 12px 11px 36px;border-radius:11px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:14px;}
+.search-box svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-faint);}
+
+.journal-entry{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+.journal-entry .je-head{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-faint);font-weight:600;margin-bottom:5px;gap:8px;}
+.journal-entry p{margin:0;font-size:14px;line-height:1.5;color:var(--ink);white-space:pre-wrap;}
+.journal-entry .je-actions{display:flex;justify-content:flex-end;margin-top:8px;}
+
+.roster-row{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:10px;background:var(--surface);border:1px solid var(--border);margin-bottom:6px;}
+.roster-check{width:22px;height:22px;border-radius:7px;border:2px solid var(--border-strong);background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:transparent;}
+.roster-check.on{background:var(--gold);border-color:var(--gold);color:#fff;}
+.roster-check svg{width:13px;height:13px;}
+.roster-body{flex:1;min-width:0;}
+.roster-name{font-weight:700;font-size:14px;}
+.roster-contact{font-size:11.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.roster-actions{display:flex;gap:5px;flex-shrink:0;}
+.roster-edit-form{display:flex;flex-direction:column;gap:6px;flex:1;}
+.roster-edit-form input{padding:8px 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--ink);font-size:13px;}
+.compose-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px;}
+.compose-card textarea{width:100%;min-height:80px;resize:vertical;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:10px 12px;font-size:13.5px;font-family:var(--ui);margin-top:8px;}
+.compose-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.roster-selectbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:12.5px;color:var(--ink-soft);}
+.add-person-form{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;padding:14px;margin-bottom:16px;}
+.add-person-form input{padding:9px 11px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--ink);font-size:13.5px;}
+.empty-state{text-align:center;padding:50px 16px;color:var(--ink-faint);}
+.empty-state svg{width:36px;height:36px;margin-bottom:10px;opacity:.6;}
+.empty-state p{font-size:13.5px;max-width:280px;margin:4px auto 0;}
+
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:12px 2px;border-top:1px solid var(--border);gap:10px;}
+.set-row:first-child{border-top:none;}
+.set-row .lbl{font-size:14px;font-weight:600;}
+.set-row .desc{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+.set-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:4px 14px;margin-bottom:18px;}
+.theme-opt,.font-opt,.pace-opt{display:flex;gap:6px;flex-wrap:wrap;}
+.theme-opt button,.font-opt button,.pace-opt button{padding:7px 11px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-soft);}
+.theme-opt button.sel,.font-opt button.sel,.pace-opt button.sel{background:var(--ink);color:var(--surface);border-color:var(--ink);}
+html[data-theme="dark"] .theme-opt button.sel, html[data-theme="dark"] .font-opt button.sel, html[data-theme="dark"] .pace-opt button.sel{background:var(--gold);color:#1D1C24;border-color:var(--gold);}
+.stepper{display:flex;align-items:center;gap:8px;}
+.stepper button{width:28px;height:28px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);font-size:15px;font-weight:700;}
+.stepper span{font-size:13px;font-weight:600;min-width:34px;text-align:center;}
+.set-group input[type=text],.set-group input[type=password],.set-group input[type=date]{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--ink);font-size:13.5px;margin:6px 0 2px;}
+.key-row{padding:12px 2px;}
+.key-status{font-size:12px;margin-top:6px;display:flex;align-items:center;gap:5px;}
+.key-status.ok{color:var(--green);}
+.key-status.err{color:var(--danger);}
+.field-actions{display:flex;gap:8px;margin-top:8px;}
+.about-block{font-size:12px;color:var(--ink-faint);line-height:1.6;padding:14px 2px;}
+.version-list{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.version-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);}
+.version-row.sel{border-color:var(--gold);}
+.version-row .vname{font-weight:700;font-size:13.5px;}
+.version-row .vfull{font-size:11px;color:var(--ink-soft);}
+
+.modal-scrim{position:fixed;inset:0;background:var(--scrim);z-index:50;display:flex;align-items:flex-end;justify-content:center;}
+@media(min-width:640px){.modal-scrim{align-items:center;}}
+.modal-sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;border-radius:20px 20px 0 0;overflow:auto;box-shadow:var(--shadow-md);animation:sheetUp .22s ease;}
+@media(min-width:640px){.modal-sheet{border-radius:18px;max-height:86vh;}}
+@keyframes sheetUp{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-head{position:sticky;top:0;background:var(--bg);display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);z-index:2;gap:8px;}
+.modal-head h3{font-family:var(--serif-display);font-size:17px;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.modal-body{padding:16px;}
+
+.reader-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--border);position:sticky;top:57px;background:var(--bg);z-index:1;}
+.reader-body{padding:22px 20px 40px;}
+#readerText{line-height:1.9;color:var(--ink);}
+#readerText.f-serif{font-family:var(--serif-read);}
+#readerText.f-sans{font-family:var(--sans-read);}
+#readerText .verse{cursor:pointer;border-radius:3px;transition:background .15s ease;padding:1px 0;}
+#readerText .verse:hover{background:var(--surface-2);}
+#readerText .verse.hl{background:rgba(199,154,60,.38);}
+#readerText .verse.hl:hover{background:rgba(199,154,60,.5);}
+html[data-theme="dark"] #readerText .verse.hl{background:rgba(217,174,85,.32);}
+html[data-theme="dark"] #readerText .verse.hl:hover{background:rgba(217,174,85,.44);}
+#readerText .vnum{font-size:.68em;color:var(--gold);font-weight:700;margin-right:.15em;vertical-align:super;}
+.reader-status{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:14px;}
+.reader-status svg{width:30px;height:30px;color:var(--ink-faint);margin-bottom:10px;}
+.copyright-note{font-size:11px;color:var(--ink-faint);border-top:1px solid var(--border);margin-top:26px;padding-top:14px;line-height:1.6;}
+.reader-version-select{border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);border-radius:9px;padding:6px 8px;font-size:12.5px;font-weight:600;}
+
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);z-index:90;opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+@media(max-width:400px){.stats-grid{grid-template-columns:repeat(3,1fr);} .day-title{font-size:22px;}}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4c-2-1.3-5-2-8-2v16c3 0 6 .7 8 2 2-1.3 5-2 8-2V2c-3 0-6 .7-8 2Z"/><path d="M12 4v16"/></svg>
+    </div>
+    <h1>Rooted in the Word</h1>
+    <p class="splash-tag">Reading Journal</p>
+    <p class="splash-verse">"Like a tree planted by streams of water." <span>— Psalm 1:3</span></p>
+    <button class="btn primary" id="splashBtn" style="width:100%;justify-content:center;padding:13px;margin-top:26px;">Begin</button>
+    <button class="btn ghost" id="splashExploreBtn" style="width:100%;justify-content:center;padding:11px;margin-top:8px;color:var(--ink-soft);">Explore first</button>
+  </div>
+</div>
+
+<div id="onboarding" class="hidden">
+  <div class="ob-card card">
+    <div class="ob-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 4c-2-1.3-5-2-8-2v16c3 0 6 .7 8 2 2-1.3 5-2 8-2V2c-3 0-6 .7-8 2Z"/><path d="M12 4v16"/></svg>
+    </div>
+    <h1>Begin the M'Cheyne Plan</h1>
+    <p class="sub">Four short readings a day take you through the New Testament and Psalms twice, and the rest of the Bible once, in a year. Read alongside your own Bible and track your progress here.</p>
+
+    <label>Pace</label>
+    <div class="ob-choice" id="obPaceChoice">
+      <button data-pace="1yr" class="sel">1 Year — 4 readings/day</button>
+      <button data-pace="2yr">2 Years — 2 readings/day</button>
+    </div>
+
+    <label style="margin-top:20px;">When do you start?</label>
+    <div class="ob-choice">
+      <button id="obChoiceDate" class="sel">Start on a date</button>
+      <button id="obChoiceDay">Already mid-plan</button>
+    </div>
+
+    <div id="obDatePanel">
+      <label for="obStartDate">Start date</label>
+      <input type="date" id="obStartDate">
+    </div>
+    <div id="obDayPanel" class="hidden">
+      <label for="obDayNum">You're currently on day…</label>
+      <div class="ob-day-input">
+        <input type="number" id="obDayNum" min="1" value="1">
+        <span style="font-size:12.5px;color:var(--ink-soft);" id="obDayMax">of 365 — we'll back‑date your start.</span>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <button class="btn primary" id="obStartBtn" style="width:100%;justify-content:center;padding:12px;">Start Reading Plan</button>
+      <button class="btn ghost" id="obNotNowBtn" style="width:100%;justify-content:center;padding:10px;margin-top:6px;color:var(--ink-soft);">Not now — just exploring</button>
+    </div>
+  </div>
+</div>
+
+<div id="appShell" class="hidden">
+  <div class="ribbon-wrap">
+    <header class="top">
+      <div class="brand"><b>Rooted in the Word</b><span>Reading Journal</span></div>
+      <div class="streak-chip" id="streakChip">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 1 4-1 5-2 5a2.5 2.5 0 0 1-2.5-2.5c0-2 2-3 1-6-2 .5-4 2.5-4 5.5A6.5 6.5 0 0 0 16 15.5 8 8 0 0 1 8 12c0-4 3-6 4-10Z"/></svg>
+        <span id="streakVal">0</span>
+      </div>
+    </header>
+    <div class="ribbon-track"><div class="ribbon-fill" id="ribbonFill" style="width:2%"></div></div>
+    <div class="ribbon-label"><span id="ribbonLabelLeft">Day 1</span><span id="ribbonLabelRight">0% complete</span></div>
+  </div>
+
+  <main id="view"></main>
+
+  <nav class="tabbar">
+    <button data-tab="today" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4c-2-1.3-5-2-8-2v16c3 0 6 .7 8 2 2-1.3 5-2 8-2V2c-3 0-6 .7-8 2Z"/><path d="M12 4v16"/></svg>
+      Today
+    </button>
+    <button data-tab="plan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+      Plan
+    </button>
+    <button data-tab="journal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3.5h11l3 3V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5Z"/><path d="M7.5 9h9M7.5 12.5h9M7.5 16h5"/></svg>
+      Journal
+    </button>
+    <button data-tab="group">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 19c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17" cy="8.5" r="2.5"/><path d="M15.5 13.2c2.7.3 4.5 2.4 4.5 5.3"/></svg>
+      Group
+    </button>
+    <button data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V19a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 17.36a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 13a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.64 6.87a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V1a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V7a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z"/></svg>
+      Settings
+    </button>
+  </nav>
+</div>
+
+<div id="modalRoot"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const PLAN = [["Gen 1","Matt 1","Ezra 1","Acts 1"],["Gen 2","Matt 2","Ezra 2","Acts 2"],["Gen 3","Matt 3","Ezra 3","Acts 3"],["Gen 4","Matt 4","Ezra 4","Acts 4"],["Gen 5","Matt 5","Ezra 5","Acts 5"],["Gen 6","Matt 6","Ezra 6","Acts 6"],["Gen 7","Matt 7","Ezra 7","Acts 7"],["Gen 8","Matt 8","Ezra 8","Acts 8"],["Gen 9-10","Matt 9","Ezra 9","Acts 9"],["Gen 11","Matt 10","Ezra 10","Acts 10"],["Gen 12","Matt 11","Neh 1","Acts 11"],["Gen 13","Matt 12","Neh 2","Acts 12"],["Gen 14","Matt 13","Neh 3","Acts 13"],["Gen 15","Matt 14","Neh 4","Acts 14"],["Gen 16","Matt 15","Neh 5","Acts 15"],["Gen 17","Matt 16","Neh 6","Acts 16"],["Gen 18","Matt 17","Neh 7","Acts 17"],["Gen 19","Matt 18","Neh 8","Acts 18"],["Gen 20","Matt 19","Neh 9","Acts 19"],["Gen 21","Matt 20","Neh 10","Acts 20"],["Gen 22","Matt 21","Neh 11","Acts 21"],["Gen 23","Matt 22","Neh 12","Acts 22"],["Gen 24","Matt 23","Neh 13","Acts 23"],["Gen 25","Matt 24","Est 1","Acts 24"],["Gen 26","Matt 25","Est 2","Acts 25"],["Gen 27","Matt 26","Est 3","Acts 26"],["Gen 28","Matt 27","Est 4","Acts 27"],["Gen 29","Matt 28","Est 5","Acts 28"],["Gen 30","Mark 1","Est 6","Rom 1"],["Gen 31","Mark 2","Est 7","Rom 2"],["Gen 32","Mark 3","Est 8","Rom 3"],["Gen 33","Mark 4","Est 9-10","Rom 4"],["Gen 34","Mark 5","Job 1","Rom 5"],["Gen 35-36","Mark 6","Job 2","Rom 6"],["Gen 37","Mark 7","Job 3","Rom 7"],["Gen 38","Mark 8","Job 4","Rom 8"],["Gen 39","Mark 9","Job 5","Rom 9"],["Gen 40","Mark 10","Job 6","Rom 10"],["Gen 41","Mark 11","Job 7","Rom 11"],["Gen 42","Mark 12","Job 8","Rom 12"],["Gen 43","Mark 13","Job 9","Rom 13"],["Gen 44","Mark 14","Job 10","Rom 14"],["Gen 45","Mark 15","Job 11","Rom 15"],["Gen 46","Mark 16","Job 12","Rom 16"],["Gen 47","Luke 1:1-38","Job 13","1 Cor 1"],["Gen 48","Luke 1:39-80","Job 14","1 Cor 2"],["Gen 49","Luke 2","Job 15","1 Cor 3"],["Gen 50","Luke 3","Job 16-17","1 Cor 4"],["Ex 1","Luke 4","Job 18","1 Cor 5"],["Ex 2","Luke 5","Job 19","1 Cor 6"],["Ex 3","Luke 6","Job 20","1 Cor 7"],["Ex 4","Luke 7","Job 21","1 Cor 8"],["Ex 5","Luke 8","Job 22","1 Cor 9"],["Ex 6","Luke 9","Job 23","1 Cor 10"],["Ex 7","Luke 10","Job 24","1 Cor 11"],["Ex 8","Luke 11","Job 25-26","1 Cor 12"],["Ex 9","Luke 12","Job 27","1 Cor 13"],["Ex 10","Luke 13","Job 28","1 Cor 14"],["Ex 11","Luke 14","Job 29","1 Cor 15"],["Ex 12","Luke 15","Job 30","1 Cor 16"],["Ex 13","Luke 16","Job 31","2 Cor 1"],["Ex 14","Luke 17","Job 32","2 Cor 2"],["Ex 15","Luke 18","Job 33","2 Cor 3"],["Ex 16","Luke 19","Job 34","2 Cor 4"],["Ex 17","Luke 20","Job 35","2 Cor 5"],["Ex 18","Luke 21","Job 36","2 Cor 6"],["Ex 19","Luke 22","Job 37","2 Cor 7"],["Ex 20","Luke 23","Job 38","2 Cor 8"],["Ex 21","Luke 24","Job 39","2 Cor 9"],["Ex 22","John 1","Job 40","2 Cor 10"],["Ex 23","John 2","Job 41","2 Cor 11"],["Ex 24","John 3","Job 42","2 Cor 12"],["Ex 25","John 4","Prov 1","2 Cor 13"],["Ex 26","John 5","Prov 2","Gal 1"],["Ex 27","John 6","Prov 3","Gal 2"],["Ex 28","John 7","Prov 4","Gal 3"],["Ex 29","John 8","Prov 5","Gal 4"],["Ex 30","John 9","Prov 6","Gal 5"],["Ex 31","John 10","Prov 7","Gal 6"],["Ex 32","John 11","Prov 8","Eph 1"],["Ex 33","John 12","Prov 9","Eph 2"],["Ex 34","John 13","Prov 10","Eph 3"],["Ex 35","John 14","Prov 11","Eph 4"],["Ex 36","John 15","Prov 12","Eph 5"],["Ex 37","John 16","Prov 13","Eph 6"],["Ex 38","John 17","Prov 14","Phil 1"],["Ex 39","John 18","Prov 15","Phil 2"],["Ex 40","John 19","Prov 16","Phil 3"],["Lev 1","John 20","Prov 17","Phil 4"],["Lev 2-3","John 21","Prov 18","Col 1"],["Lev 4","Ps 1-2","Prov 19","Col 2"],["Lev 5","Ps 3-4","Prov 20","Col 3"],["Lev 6","Ps 5-6","Prov 21","Col 4"],["Lev 7","Ps 7-8","Prov 22","1 Thes 1"],["Lev 8","Ps 9","Prov 23","1 Thes 2"],["Lev 9","Ps 10","Prov 24","1 Thes 3"],["Lev 10","Ps 11-12","Prov 25","1 Thes 4"],["Lev 11-12","Ps 13-14","Prov 26","1 Thes 5"],["Lev 13","Ps 15-16","Prov 27","2 Thes 1"],["Lev 14","Ps 17","Prov 28","2 Thes 2"],["Lev 15","Ps 18","Prov 29","2 Thes 3"],["Lev 16","Ps 19","Prov 30","1 Tim 1"],["Lev 17","Ps 20-21","Prov 31","1 Tim 2"],["Lev 18","Ps 22","Eccl 1","1 Tim 3"],["Lev 19","Ps 23-24","Eccl 2","1 Tim 4"],["Lev 20","Ps 25","Eccl 3","1 Tim 5"],["Lev 21","Ps 26-27","Eccl 4","1 Tim 6"],["Lev 22","Ps 28-29","Eccl 5","2 Tim 1"],["Lev 23","Ps 30","Eccl 6","2 Tim 2"],["Lev 24","Ps 31","Eccl 7","2 Tim 3"],["Lev 25","Ps 32","Eccl 8","2 Tim 4"],["Lev 26","Ps 33","Eccl 9","Titus 1"],["Lev 27","Ps 34","Eccl 10","Titus 2"],["Num 1","Ps 35","Eccl 11","Titus 3"],["Num 2","Ps 36","Eccl 12","Phm 1"],["Num 3","Ps 37","Sng 1","Heb 1"],["Num 4","Ps 38","Sng 2","Heb 2"],["Num 5","Ps 39","Sng 3","Heb 3"],["Num 6","Ps 40-41","Sng 4","Heb 4"],["Num 7","Ps 42-43","Sng 5","Heb 5"],["Num 8","Ps 44","Sng 6","Heb 6"],["Num 9","Ps 45","Sng 7","Heb 7"],["Num 10","Ps 46-47","Sng 8","Heb 8"],["Num 11","Ps 48","Isa 1","Heb 9"],["Num 12-13","Ps 49","Isa 2","Heb 10"],["Num 14","Ps 50","Isa 3-4","Heb 11"],["Num 15","Ps 51","Isa 5","Heb 12"],["Num 16","Ps 52-54","Isa 6","Heb 13"],["Num 17-18","Ps 55","Isa 7","Jas 1"],["Num 19","Ps 56-57","Isa 8","Jas 2"],["Num 20","Ps 58-59","Isa 9","Jas 3"],["Num 21","Ps 60-61","Isa 10","Jas 4"],["Num 22","Ps 62-63","Isa 11-12","Jas 5"],["Num 23","Ps 64-65","Isa 13","1 Pet 1"],["Num 24","Ps 66-67","Isa 14","1 Pet 2"],["Num 25","Ps 68","Isa 15","1 Pet 3"],["Num 26","Ps 69","Isa 16","1 Pet 4"],["Num 27","Ps 70-71","Isa 17-18","1 Pet 5"],["Num 28","Ps 72","Isa 19-20","2 Pet 1"],["Num 29","Ps 73","Isa 21","2 Pet 2"],["Num 30","Ps 74","Isa 22","2 Pet 3"],["Num 31","Ps 75-76","Isa 23","1 Jn 1"],["Num 32","Ps 77","Isa 24","1 Jn 2"],["Num 33","Ps 78:1-39","Isa 25","1 Jn 3"],["Num 34","Ps 78:40-72","Isa 26","1 Jn 4"],["Num 35","Ps 79","Isa 27","1 Jn 5"],["Num 36","Ps 80","Isa 28","2 Jn 1"],["Deut 1","Ps 81-82","Isa 29","3 Jn 1"],["Deut 2","Ps 83-84","Isa 30","Jude 1"],["Deut 3","Ps 85","Isa 31","Rev 1"],["Deut 4","Ps 86-87","Isa 32","Rev 2"],["Deut 5","Ps 88","Isa 33","Rev 3"],["Deut 6","Ps 89","Isa 34","Rev 4"],["Deut 7","Ps 90","Isa 35","Rev 5"],["Deut 8","Ps 91","Isa 36","Rev 6"],["Deut 9","Ps 92-93","Isa 37","Rev 7"],["Deut 10","Ps 94","Isa 38","Rev 8"],["Deut 11","Ps 95-96","Isa 39","Rev 9"],["Deut 12","Ps 97-98","Isa 40","Rev 10"],["Deut 13-14","Ps 99-101","Isa 41","Rev 11"],["Deut 15","Ps 102","Isa 42","Rev 12"],["Deut 16","Ps 103","Isa 43","Rev 13"],["Deut 17","Ps 104","Isa 44","Rev 14"],["Deut 18","Ps 105","Isa 45","Rev 15"],["Deut 19","Ps 106","Isa 46","Rev 16"],["Deut 20","Ps 107","Isa 47","Rev 17"],["Deut 21","Ps 108-109","Isa 48","Rev 18"],["Deut 22","Ps 110-111","Isa 49","Rev 19"],["Deut 23","Ps 112-113","Isa 50","Rev 20"],["Deut 24","Ps 114-115","Isa 51","Rev 21"],["Deut 25","Ps 116","Isa 52","Rev 22"],["Deut 26","Ps 117-118","Isa 53","Matt 1"],["Deut 27","Ps 119:1-24","Isa 54","Matt 2"],["Deut 28","Ps 119:25-48","Isa 55","Matt 3"],["Deut 29","Ps 119:49-72","Isa 56","Matt 4"],["Deut 30","Ps 119:73-96","Isa 57","Matt 5"],["Deut 31","Ps 119:97-120","Isa 58","Matt 6"],["Deut 32","Ps 119:121-144","Isa 59","Matt 7"],["Deut 33-34","Ps 119:145-176","Isa 60","Matt 8"],["Josh 1","Ps 120-122","Isa 61","Matt 9"],["Josh 2","Ps 123-125","Isa 62","Matt 10"],["Josh 3","Ps 126-128","Isa 63","Matt 11"],["Josh 4","Ps 129-131","Isa 64","Matt 12"],["Josh 5","Ps 132-134","Isa 65","Matt 13"],["Josh 6","Ps 135-136","Isa 66","Matt 14"],["Josh 7","Ps 137-138","Jer 1","Matt 15"],["Josh 8","Ps 139","Jer 2","Matt 16"],["Josh 9","Ps 140-141","Jer 3","Matt 17"],["Josh 10","Ps 142-143","Jer 4","Matt 18"],["Josh 11","Ps 144","Jer 5","Matt 19"],["Josh 12-13","Ps 145","Jer 6","Matt 20"],["Josh 14-15","Ps 146-147","Jer 7","Matt 21"],["Josh 16-17","Ps 148","Jer 8","Matt 22"],["Josh 18-19","Ps 149-150","Jer 9","Matt 23"],["Josh 20-21","Acts 1","Jer 10","Matt 24"],["Josh 22","Acts 2","Jer 11","Matt 25"],["Josh 23","Acts 3","Jer 12","Matt 26"],["Josh 24","Acts 4","Jer 13","Matt 27"],["Judg 1","Acts 5","Jer 14","Matt 28"],["Judg 2","Acts 6","Jer 15","Mark 1"],["Judg 3","Acts 7","Jer 16","Mark 2"],["Judg 4","Acts 8","Jer 17","Mark 3"],["Judg 5","Acts 9","Jer 18","Mark 4"],["Judg 6","Acts 10","Jer 19","Mark 5"],["Judg 7","Acts 11","Jer 20","Mark 6"],["Judg 8","Acts 12","Jer 21","Mark 7"],["Judg 9","Acts 13","Jer 22","Mark 8"],["Judg 10","Acts 14","Jer 23","Mark 9"],["Judg 11","Acts 15","Jer 24","Mark 10"],["Judg 12","Acts 16","Jer 25","Mark 11"],["Judg 13","Acts 17","Jer 26","Mark 12"],["Judg 14","Acts 18","Jer 27","Mark 13"],["Judg 15","Acts 19","Jer 28","Mark 14"],["Judg 16","Acts 20","Jer 29","Mark 15"],["Judg 17","Acts 21","Jer 30-31","Mark 16"],["Judg 18","Acts 22","Jer 32","Luke 1"],["Judg 19","Acts 23","Jer 33","Luke 2"],["Judg 20","Acts 24","Jer 34","Luke 3"],["Judg 21","Acts 25","Jer 35","Luke 4"],["Ruth 1","Acts 26","Jer 36","Luke 5"],["Ruth 2","Acts 27","Jer 37","Luke 6"],["Ruth 3-4","Acts 28","Jer 38","Luke 7"],["1 Sam 1","Rom 1","Jer 39","Luke 8"],["1 Sam 2","Rom 2","Jer 40","Luke 9"],["1 Sam 3","Rom 3","Jer 41","Luke 10"],["1 Sam 4","Rom 4","Jer 42","Luke 11"],["1 Sam 5-6","Rom 5","Jer 43","Luke 12"],["1 Sam 7-8","Rom 6","Jer 44-45","Luke 13"],["1 Sam 9","Rom 7","Jer 46","Luke 14"],["1 Sam 10","Rom 8","Jer 47","Luke 15"],["1 Sam 11","Rom 9","Jer 48","Luke 16"],["1 Sam 12","Rom 10","Jer 49","Luke 17"],["1 Sam 13","Rom 11","Jer 50","Luke 18"],["1 Sam 14","Rom 12","Jer 51","Luke 19"],["1 Sam 15","Rom 13","Jer 52","Luke 20"],["1 Sam 16","Rom 14","Lam 1","Luke 21"],["1 Sam 17","Rom 15","Lam 2","Luke 22"],["1 Sam 18","Rom 16","Lam 3","Luke 23"],["1 Sam 19","1 Cor 1","Lam 4","Luke 24"],["1 Sam 20","1 Cor 2","Lam 5","John 1"],["1 Sam 21-22","1 Cor 3","Ezek 1","John 2"],["1 Sam 23","1 Cor 4","Ezek 2","John 3"],["1 Sam 24","1 Cor 5","Ezek 3","John 4"],["1 Sam 25","1 Cor 6","Ezek 4","John 5"],["1 Sam 26","1 Cor 7","Ezek 5","John 6"],["1 Sam 27","1 Cor 8","Ezek 6","John 7"],["1 Sam 28","1 Cor 9","Ezek 7","John 8"],["1 Sam 29-30","1 Cor 10","Ezek 8","John 9"],["1 Sam 31","1 Cor 11","Ezek 9","John 10"],["2 Sam 1","1 Cor 12","Ezek 10","John 11"],["2 Sam 2","1 Cor 13","Ezek 11","John 12"],["2 Sam 3","1 Cor 14","Ezek 12","John 13"],["2 Sam 4-5","1 Cor 15","Ezek 13","John 14"],["2 Sam 6","1 Cor 16","Ezek 14","John 15"],["2 Sam 7","2 Cor 1","Ezek 15","John 16"],["2 Sam 8-9","2 Cor 2","Ezek 16","John 17"],["2 Sam 10","2 Cor 3","Ezek 17","John 18"],["2 Sam 11","2 Cor 4","Ezek 18","John 19"],["2 Sam 12","2 Cor 5","Ezek 19","John 20"],["2 Sam 13","2 Cor 6","Ezek 20","John 21"],["2 Sam 14","2 Cor 7","Ezek 21","Ps 1-2"],["2 Sam 15","2 Cor 8","Ezek 22","Ps 3-4"],["2 Sam 16","2 Cor 9","Ezek 23","Ps 5-6"],["2 Sam 17","2 Cor 10","Ezek 24","Ps 7-8"],["2 Sam 18","2 Cor 11","Ezek 25","Ps 9"],["2 Sam 19","2 Cor 12","Ezek 26","Ps 10"],["2 Sam 20","2 Cor 13","Ezek 27","Ps 11-12"],["2 Sam 21","Gal 1","Ezek 28","Ps 13-14"],["2 Sam 22","Gal 2","Ezek 29","Ps 15-16"],["2 Sam 23","Gal 3","Ezek 30","Ps 17"],["2 Sam 24","Gal 4","Ezek 31","Ps 18"],["1 Kgs 1","Gal 5","Ezek 32","Ps 19"],["1 Kgs 2","Gal 6","Ezek 33","Ps 20-21"],["1 Kgs 3","Eph 1","Ezek 34","Ps 22"],["1 Kgs 4-5","Eph 2","Ezek 35","Ps 23-24"],["1 Kgs 6","Eph 3","Ezek 36","Ps 25"],["1 Kgs 7","Eph 4","Ezek 37","Ps 26-27"],["1 Kgs 8","Eph 5","Ezek 38","Ps 28-29"],["1 Kgs 9","Eph 6","Ezek 39","Ps 30"],["1 Kgs 10","Phil 1","Ezek 40","Ps 31"],["1 Kgs 11","Phil 2","Ezek 41","Ps 32"],["1 Kgs 12","Phil 3","Ezek 42","Ps 33"],["1 Kgs 13","Phil 4","Ezek 43","Ps 34"],["1 Kgs 14","Col 1","Ezek 44","Ps 35"],["1 Kgs 15","Col 2","Ezek 45","Ps 36"],["1 Kgs 16","Col 3","Ezek 46","Ps 37"],["1 Kgs 17","Col 4","Ezek 47","Ps 38"],["1 Kgs 18","1 Thes 1","Ezek 48","Ps 39"],["1 Kgs 19","1 Thes 2","Dan 1","Ps 40-41"],["1 Kgs 20","1 Thes 3","Dan 2","Ps 42-43"],["1 Kgs 21","1 Thes 4","Dan 3","Ps 44"],["1 Kgs 22","1 Thes 5","Dan 4","Ps 45"],["2 Kgs 1","2 Thes 1","Dan 5","Ps 46-47"],["2 Kgs 2","2 Thes 2","Dan 6","Ps 48"],["2 Kgs 3","2 Thes 3","Dan 7","Ps 49"],["2 Kgs 4","1 Tim 1","Dan 8","Ps 50"],["2 Kgs 5","1 Tim 2","Dan 9","Ps 51"],["2 Kgs 6","1 Tim 3","Dan 10","Ps 52-54"],["2 Kgs 7","1 Tim 4","Dan 11","Ps 55"],["2 Kgs 8","1 Tim 5","Dan 12","Ps 56-57"],["2 Kgs 9","1 Tim 6","Hos 1","Ps 58-59"],["2 Kgs 10-11","2 Tim 1","Hos 2","Ps 60-61"],["2 Kgs 12","2 Tim 2","Hos 3-4","Ps 62-63"],["2 Kgs 13","2 Tim 3","Hos 5-6","Ps 64-65"],["2 Kgs 14","2 Tim 4","Hos 7","Ps 66-67"],["2 Kgs 15","Titus 1","Hos 8","Ps 68"],["2 Kgs 16","Titus 2","Hos 9","Ps 69"],["2 Kgs 17","Titus 3","Hos 10","Ps 70-71"],["2 Kgs 18","Phm 1","Hos 11","Ps 72"],["2 Kgs 19","Heb 1","Hos 12","Ps 73"],["2 Kgs 20","Heb 2","Hos 13","Ps 74"],["2 Kgs 21","Heb 3","Hos 14","Ps 75-76"],["2 Kgs 22","Heb 4","Joel 1","Ps 77"],["2 Kgs 23","Heb 5","Joel 2","Ps 78"],["2 Kgs 24","Heb 6","Joel 3","Ps 79"],["2 Kgs 25","Heb 7","Amos 1","Ps 80"],["1 Chr 1-2","Heb 8","Amos 2","Ps 81-82"],["1 Chr 3-4","Heb 9","Amos 3","Ps 83-84"],["1 Chr 5-6","Heb 10","Amos 4","Ps 85"],["1 Chr 7-8","Heb 11","Amos 5","Ps 86"],["1 Chr 9-10","Heb 12","Amos 6","Ps 87-88"],["1 Chr 11-12","Heb 13","Amos 7","Ps 89"],["1 Chr 13-14","Jas 1","Amos 8","Ps 90"],["1 Chr 15","Jas 2","Amos 9","Ps 91"],["1 Chr 16","Jas 3","Obad 1","Ps 92-93"],["1 Chr 17","Jas 4","Jonah 1","Ps 94"],["1 Chr 18","Jas 5","Jonah 2","Ps 95-96"],["1 Chr 19-20","1 Pet 1","Jonah 3","Ps 97-98"],["1 Chr 21","1 Pet 2","Jonah 4","Ps 99-101"],["1 Chr 22","1 Pet 3","Mic 1","Ps 102"],["1 Chr 23","1 Pet 4","Mic 2","Ps 103"],["1 Chr 24-25","1 Pet 5","Mic 3","Ps 104"],["1 Chr 26-27","2 Pet 1","Mic 4","Ps 105"],["1 Chr 28","2 Pet 2","Mic 5","Ps 106"],["1 Chr 29","2 Pet 3","Mic 6","Ps 107"],["2 Chr 1","1 Jn 1","Mic 7","Ps 108-109"],["2 Chr 2","1 Jn 2","Nahum 1","Ps 110-111"],["2 Chr 3-4","1 Jn 3","Nahum 2","Ps 112-113"],["2 Chr 5","1 Jn 4","Nahum 3","Ps 114-115"],["2 Chr 6","1 Jn 5","Hab 1","Ps 116"],["2 Chr 7","2 Jn 1","Hab 2","Ps 117-118"],["2 Chr 8","3 Jn 1","Hab 3","Ps 119:1-24"],["2 Chr 9","Jude 1","Zeph 1","Ps 119:25-48"],["2 Chr 10","Rev 1","Zeph 2","Ps 119:49-72"],["2 Chr 11-12","Rev 2","Zeph 3","Ps 119:73-96"],["2 Chr 13","Rev 3","Hag 1","Ps 119:97-120"],["2 Chr 14-15","Rev 4","Hag 2","Ps 119:121-144"],["2 Chr 16","Rev 5","Zech 1","Ps 119:145-176"],["2 Chr 17","Rev 6","Zech 2","Ps 120-122"],["2 Chr 18","Rev 7","Zech 3","Ps 123-125"],["2 Chr 19-20","Rev 8","Zech 4","Ps 126-128"],["2 Chr 21","Rev 9","Zech 5","Ps 129-131"],["2 Chr 22-23","Rev 10","Zech 6","Ps 132-134"],["2 Chr 24","Rev 11","Zech 7","Ps 135-136"],["2 Chr 25","Rev 12","Zech 8","Ps 137-138"],["2 Chr 26","Rev 13","Zech 9","Ps 139"],["2 Chr 27-28","Rev 14","Zech 10","Ps 140-141"],["2 Chr 29","Rev 15","Zech 11","Ps 142"],["2 Chr 30","Rev 16","Zech 12","Ps 143"],["2 Chr 31","Rev 17","Zech 13","Ps 144"],["2 Chr 32","Rev 18","Zech 14","Ps 145"],["2 Chr 33","Rev 19","Mal 1","Ps 146-147"],["2 Chr 34","Rev 20","Mal 2","Ps 148"],["2 Chr 35","Rev 21","Mal 3","Ps 149"],["2 Chr 36","Rev 22","Mal 4","Ps 150"]];
+
+const BOOK_MAP = {
+  "gen":"Genesis","ex":"Exodus","lev":"Leviticus","num":"Numbers","deut":"Deuteronomy",
+  "josh":"Joshua","judg":"Judges","ruth":"Ruth","1 sam":"1 Samuel","2 sam":"2 Samuel",
+  "1 kgs":"1 Kings","2 kgs":"2 Kings","1 chr":"1 Chronicles","2 chr":"2 Chronicles",
+  "ezra":"Ezra","neh":"Nehemiah","est":"Esther","job":"Job","ps":"Psalm","prov":"Proverbs",
+  "eccl":"Ecclesiastes","sng":"Song of Solomon","isa":"Isaiah","jer":"Jeremiah",
+  "lam":"Lamentations","ezek":"Ezekiel","dan":"Daniel","hos":"Hosea","joel":"Joel",
+  "amos":"Amos","obad":"Obadiah","jonah":"Jonah","mic":"Micah","nahum":"Nahum",
+  "hab":"Habakkuk","zeph":"Zephaniah","hag":"Haggai","zech":"Zechariah","mal":"Malachi",
+  "matt":"Matthew","mark":"Mark","luke":"Luke","john":"John","acts":"Acts","rom":"Romans",
+  "1 cor":"1 Corinthians","2 cor":"2 Corinthians","gal":"Galatians","eph":"Ephesians",
+  "phil":"Philippians","col":"Colossians","1 thes":"1 Thessalonians","2 thes":"2 Thessalonians",
+  "1 tim":"1 Timothy","2 tim":"2 Timothy","titus":"Titus","phm":"Philemon","heb":"Hebrews",
+  "jas":"James","1 pet":"1 Peter","2 pet":"2 Peter","1 jn":"1 John","2 jn":"2 John",
+  "3 jn":"3 John","jude":"Jude","rev":"Revelation"
+};
+function toFullRef(ref){
+  const m = ref.match(/^((?:[1-3]\s)?[A-Za-z]+)\s+(.+)$/);
+  if(!m) return ref;
+  const abbrev = m[1].toLowerCase().trim();
+  const full = BOOK_MAP[abbrev] || m[1];
+  return full + " " + m[2];
+}
+const TAGS = ["Family I","Family II","Secret I","Secret II"];
+
+const VERSIONS = {
+  esv:{ code:"esv", label:"ESV", full:"English Standard Version", requiresKey:true,
+        copyright:"Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), copyright © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.",
+        link:"https://www.esv.org" },
+  kjv:{ code:"kjv", label:"KJV", full:"King James Version", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com" },
+  web:{ code:"web", label:"WEB", full:"World English Bible", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com" },
+  asv:{ code:"asv", label:"ASV", full:"American Standard Version", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com" },
+  bbe:{ code:"bbe", label:"BBE", full:"Bible in Basic English", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com" }
+};
+const VERSION_ORDER = ["esv","kjv","web","asv","bbe"];
+
+const LS = {
+  get(key, fallback){ try{ const v = localStorage.getItem(key); return v===null? fallback : JSON.parse(v); }catch(e){ return fallback; } },
+  set(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+};
+const K = { start:"rootedword.startDate", progress:"rootedword.progress", settings:"rootedword.settings", hl:"rootedword.highlights", roster:"rootedword.roster", events:"rootedword.events" };
+let startDate = LS.get(K.start, null);
+let progress  = LS.get(K.progress, {});
+let settings  = LS.get(K.settings, {theme:"system", fontSize:18, fontFamily:"serif", esvKey:"", bibleVersion:"esv", pace:"1yr"});
+let phl       = LS.get(K.hl, {});
+let roster    = LS.get(K.roster, []); // [{id,name,phone,email}]
+let events    = LS.get(K.events, []); // [{id,title,date,time,location,notes,attendance:{personId:bool}}]
+const sessionPassageCache = {};
+
+function saveProgress(){ LS.set(K.progress, progress); }
+function saveSettings(){ LS.set(K.settings, settings); }
+function saveHl(){ LS.set(K.hl, phl); }
+function saveRoster(){ LS.set(K.roster, roster); }
+function saveEvents(){ LS.set(K.events, events); }
+
+function getEntry(n){ return progress[n] || {f1:false,f2:false,s1:false,s2:false,note:"",bookmark:false,completedAt:null}; }
+function setEntry(n, patch){
+  const cur = getEntry(n);
+  const next = Object.assign({}, cur, patch);
+  const wasComplete = cur.f1&&cur.f2&&cur.s1&&cur.s2;
+  const isComplete = next.f1&&next.f2&&next.s1&&next.s2;
+  if(isComplete && !wasComplete) next.completedAt = new Date().toISOString();
+  if(!isComplete) next.completedAt = null;
+  progress[n] = next;
+  saveProgress();
+}
+
+function totalScheduleDays(){ return settings.pace==="2yr" ? 730 : 365; }
+function scheduleDayInfo(k){
+  if(settings.pace==="2yr"){
+    const planDay = Math.ceil(k/2);
+    const isOdd = (k%2)===1;
+    return isOdd
+      ? { planDay, keys:["f1","f2"], labels:[TAGS[0],TAGS[1]], refIdx:[0,1] }
+      : { planDay, keys:["s1","s2"], labels:[TAGS[2],TAGS[3]], refIdx:[2,3] };
+  }
+  return { planDay:k, keys:["f1","f2","s1","s2"], labels:TAGS, refIdx:[0,1,2,3] };
+}
+function isScheduleDayComplete(k){ const info = scheduleDayInfo(k); const e = getEntry(info.planDay); return info.keys.every(key=>e[key]); }
+function isScheduleDayPartial(k){ const info = scheduleDayInfo(k); const e = getEntry(info.planDay); const c = info.keys.filter(key=>e[key]).length; return c>0 && c<info.keys.length; }
+function nextIncompleteScheduleDay(){ const total = totalScheduleDays(); for(let d=1; d<=total; d++){ if(!isScheduleDayComplete(d)) return d; } return total+1; }
+function totalCompleteScheduleDays(){ const total = totalScheduleDays(); let c=0; for(let d=1; d<=total; d++){ if(isScheduleDayComplete(d)) c++; } return c; }
+function currentStreak(){ const today = scheduledDayToday(); let streak=0; for(let d=today; d>=1; d--){ if(isScheduleDayComplete(d)) streak++; else break; } return streak; }
+function longestStreak(){ let best=0, cur=0; const today = scheduledDayToday(); for(let d=1; d<=today; d++){ if(isScheduleDayComplete(d)){ cur++; best=Math.max(best,cur);} else cur=0; } return best; }
+
+function parseYMD(s){ const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); }
+function fmtYMD(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function addDays(date, n){ const d = new Date(date); d.setDate(d.getDate()+n); return d; }
+function daysBetween(a,b){ const MS=86400000; const da=new Date(a.getFullYear(),a.getMonth(),a.getDate()); const db=new Date(b.getFullYear(),b.getMonth(),b.getDate()); return Math.round((db-da)/MS); }
+function hasStarted(){ return !!startDate; }
+function dateForDay(n){ if(!startDate) return null; return addDays(parseYMD(startDate), n-1); }
+function scheduledDayToday(){
+  if(!startDate) return 1;
+  const diff = daysBetween(parseYMD(startDate), new Date()) + 1;
+  return Math.max(1, Math.min(totalScheduleDays(), diff));
+}
+function niceDate(d){ return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"}); }
+function niceDateShort(d){ return d.toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+
+let state = { tab:"today", planMode:"list", viewingDay:null, calCursor:null, searchQuery:"",
+  selectedRoster:new Set(), editingRosterId:null, shareDraft:null,
+  groupMode:"roster", meetingsMode:"list", meetingsCalCursor:null, viewingEventId:null, editingEventId:null,
+  eventInviteSelected:new Set(), eventDraft:null };
+
+function applyTheme(){
+  let t = settings.theme;
+  if(t==="system") t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark":"light";
+  document.documentElement.setAttribute("data-theme", t);
+}
+applyTheme();
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ if(settings.theme==="system") applyTheme(); });
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 1800);
+}
+function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function switchToApp(){
+  document.getElementById("splash").classList.add("hidden");
+  document.getElementById("onboarding").classList.add("hidden");
+  document.getElementById("appShell").classList.remove("hidden");
+  renderShell();
+}
+function switchToOnboarding(){
+  document.getElementById("splash").classList.add("hidden");
+  document.getElementById("appShell").classList.add("hidden");
+  document.getElementById("onboarding").classList.remove("hidden");
+}
+
+function renderShell(){
+  const total = totalScheduleDays();
+  const done = totalCompleteScheduleDays();
+  const started = hasStarted();
+  const pct = started ? Math.round((done/total)*100) : 0;
+  document.getElementById("ribbonFill").style.width = (started ? Math.max(pct,2) : 0)+"%";
+  document.getElementById("ribbonLabelLeft").textContent = started ? ("Day "+Math.min(scheduledDayToday(),total)+" of "+total) : "Not started yet";
+  document.getElementById("ribbonLabelRight").textContent = started ? (pct+"% complete") : "Explore, then begin anytime";
+  document.getElementById("streakVal").textContent = started ? currentStreak() : 0;
+
+  document.querySelectorAll("nav.tabbar button").forEach(b=>{ b.classList.toggle("active", b.dataset.tab===state.tab); });
+
+  const view = document.getElementById("view");
+  if(state.tab==="today") view.innerHTML = renderToday();
+  else if(state.tab==="plan") view.innerHTML = renderPlan();
+  else if(state.tab==="journal") view.innerHTML = renderJournal();
+  else if(state.tab==="group") view.innerHTML = renderGroup();
+  else if(state.tab==="settings") view.innerHTML = renderSettings();
+  bindViewEvents();
+}
+
+function renderDayCard(n, opts){
+  opts = opts || {};
+  const total = totalScheduleDays();
+  if(n>total){
+    return `<div class="hero celebrate">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 4c-2-1.3-5-2-8-2v16c3 0 6 .7 8 2 2-1.3 5-2 8-2V2c-3 0-6 .7-8 2Z"/><path d="M12 4v16"/></svg>
+      <h2>You've finished the plan!</h2>
+      <p>All ${total} days complete. You can restart from Settings whenever you're ready to go again.</p>
+    </div>`;
+  }
+  const info = scheduleDayInfo(n);
+  const refs = info.refIdx.map(i=>PLAN[info.planDay-1][i]);
+  const e = getEntry(info.planDay);
+  const d = dateForDay(n);
+  const rows = refs.map((ref,i)=>{
+    const key = info.keys[i];
+    const done = e[key];
+    return `<div class="reading-row">
+      <button class="chk ${done?'done':''}" data-act="toggle" data-day="${info.planDay}" data-key="${key}" data-sched="${n}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>
+      </button>
+      <div class="reading-main">
+        <div class="reading-tag">${info.labels[i]}</div>
+        <div class="reading-ref ${done?'done':''}">${escapeHtml(ref)}</div>
+      </div>
+      <div class="reading-actions">
+        <button class="icon-btn" data-act="read" data-day="${n}" data-ref="${escapeHtml(ref)}" title="Read in app">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4c-2-1.3-5-2-8-2v16c3 0 6 .7 8 2 2-1.3 5-2 8-2V2c-3 0-6 .7-8 2Z"/><path d="M12 4v16"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join("");
+
+  const schedDay = scheduledDayToday();
+  let scheduleNote = "";
+  if(hasStarted() && !opts.suppressScheduleNote && n!==schedDay){
+    scheduleNote = `<div class="schedule-note"><span>Today's calendar date (${niceDateShort(new Date())}) is scheduled as <b>Day ${schedDay}</b>.</span>
+      <button class="btn sm" data-act="gotoday" data-day="${schedDay}">View Day ${schedDay}</button></div>`;
+  }
+  const allDone = info.keys.every(k=>e[k]);
+
+  return `<div class="hero">
+    <div class="eyebrow">Day ${n} of ${total}${settings.pace==="2yr"?` · Plan Day ${info.planDay}`:""}</div>
+    <div class="day-title">${d ? niceDateShort(d) : `Day ${n}`}</div>
+    <div class="day-date">${d ? niceDate(d) : "Not yet scheduled — set a start date whenever you're ready"}</div>
+    ${scheduleNote}
+    ${rows}
+    <div class="day-footer">
+      <button class="btn primary" data-act="complete" data-day="${info.planDay}" data-sched="${n}">${allDone?'Marked complete ✓':'Mark all read'}</button>
+      <button class="icon-btn ${e.bookmark?'active':''}" data-act="bookmark" data-day="${info.planDay}" title="Bookmark this reading">
+        <svg viewBox="0 0 24 24" fill="${e.bookmark?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8"><path d="M6 3.5h12V21l-6-4-6 4V3.5Z"/></svg>
+      </button>
+      ${n>1?`<button class="icon-btn" data-act="nav" data-day="${n-1}" title="Previous day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>`:""}
+      <button class="icon-btn" data-act="nav" data-day="${Math.min(n+1,total)}" title="Next day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <div class="note-box">
+      <div class="note-label-row">
+        <label><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg> Notes for this reading</label>
+        <button class="icon-btn" data-act="opennotemodal" data-day="${info.planDay}" title="Open notes full-screen" style="width:28px;height:28px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+      </div>
+      <textarea data-act="note" data-day="${info.planDay}" placeholder="What stood out to you? Questions, prayers, cross-references…">${escapeHtml(e.note)}</textarea>
+    </div>
+  </div>`;
+}
+
+function renderToday(){
+  const n = nextIncompleteScheduleDay();
+  const banner = hasStarted() ? "" : `<div class="schedule-note" style="margin-bottom:14px;">
+    <span>You're exploring — nothing's scheduled to a calendar yet. Anything you check off or note here is saved and will carry over once you begin.</span>
+    <button class="btn sm primary" data-act="beginplan">Begin the Plan</button>
+  </div>`;
+  return `
+    ${banner}
+    ${renderDayCard(n)}
+    <div class="stats-grid">
+      <div class="stat"><b>${totalCompleteScheduleDays()}</b><span>Days done</span></div>
+      <div class="stat"><b>${currentStreak()}</b><span>Streak</span></div>
+      <div class="stat"><b>${longestStreak()}</b><span>Best streak</span></div>
+    </div>
+  `;
+}
+
+function monthName(m){ return ["January","February","March","April","May","June","July","August","September","October","November","December"][m]; }
+
+function renderPlan(){
+  const mode = state.planMode;
+  return `
+    <div class="seg">
+      <button data-planmode="list" class="${mode==='list'?'active':''}">List</button>
+      <button data-planmode="cal" class="${mode==='cal'?'active':''}">Calendar</button>
+      <button data-planmode="missed" class="${mode==='missed'?'active':''}">Missed${missedCount()?` (${missedCount()})`:''}</button>
+    </div>
+    ${mode==='list' ? renderPlanList() : mode==='cal' ? renderPlanCalendar() : renderMissed()}
+  `;
+}
+
+function missedCount(){
+  const today = scheduledDayToday();
+  let c=0;
+  for(let n=1;n<today;n++){ if(!isScheduleDayComplete(n)) c++; }
+  return c;
+}
+
+function renderMissed(){
+  if(!hasStarted()){
+    return `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg><p>Missed-reading tracking starts once you set a start date.</p><button class="btn sm primary" data-act="beginplan" style="margin-top:12px;">Begin the Plan</button></div>`;
+  }
+  const today = scheduledDayToday();
+  let rows = "";
+  for(let n=1;n<today;n++){
+    if(isScheduleDayComplete(n)) continue;
+    const info = scheduleDayInfo(n);
+    const d = dateForDay(n);
+    const refs = info.refIdx.map(i=>PLAN[info.planDay-1][i]);
+    rows += `<div class="plan-row" data-act="opendaymodal" data-day="${n}">
+      <div class="pd-num">${n}</div>
+      <div class="pd-body">
+        <div class="pd-date">${niceDateShort(d)}</div>
+        <div class="pd-refs">${refs.join(" · ")}</div>
+      </div>
+      <div class="pd-flags">
+        <button class="icon-btn" data-act="quickcomplete" data-day="${info.planDay}" data-sched="${n}" title="Mark read" onclick="event.stopPropagation();">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }
+  if(!rows){
+    return `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 13l4 4L19 7"/></svg><p>Nothing missed — you're caught up through today.</p></div>`;
+  }
+  return `<div class="section-title">${missedCount()} reading${missedCount()===1?'':'s'} not yet marked read</div>${rows}`;
+}
+
+function renderPlanList(){
+  const total = totalScheduleDays();
+  if(!hasStarted()){
+    let html = `<div class="schedule-note" style="margin-bottom:14px;"><span>Browsing the plan — set a start date to see real calendar dates and unlock the calendar &amp; missed views.</span><button class="btn sm primary" data-act="beginplan">Begin the Plan</button></div>`;
+    for(let n=1;n<=total;n++){
+      const info = scheduleDayInfo(n);
+      const e = getEntry(info.planDay);
+      const complete = isScheduleDayComplete(n);
+      const refs = info.refIdx.map(i=>PLAN[info.planDay-1][i]);
+      html += `<div class="plan-row ${complete?'complete':''}" data-act="opendaymodal" data-day="${n}">
+        <div class="pd-num">${complete? checkIconSm() : n}</div>
+        <div class="pd-body">
+          <div class="pd-date">Day ${n}</div>
+          <div class="pd-refs">${refs.join(" · ")}</div>
+        </div>
+        <div class="pd-flags">
+          ${e.bookmark?`<svg viewBox="0 0 24 24" fill="currentColor" style="color:var(--gold)"><path d="M6 3.5h12V21l-6-4-6 4V3.5Z"/></svg>`:""}
+          ${e.note?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink-faint)"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg>`:""}
+        </div>
+      </div>`;
+    }
+    return html;
+  }
+  let html = "";
+  let curMonth = null;
+  for(let n=1;n<=total;n++){
+    const d = dateForDay(n);
+    const label = monthName(d.getMonth())+" "+d.getFullYear();
+    if(label!==curMonth){
+      html += `<div class="month-group"><div class="month-head">${label}</div>`;
+      curMonth = label;
+    }
+    const info = scheduleDayInfo(n);
+    const e = getEntry(info.planDay);
+    const complete = isScheduleDayComplete(n);
+    const today = n===scheduledDayToday();
+    const refs = info.refIdx.map(i=>PLAN[info.planDay-1][i]);
+    html += `<div class="plan-row ${complete?'complete':''} ${today?'today':''}" data-act="opendaymodal" data-day="${n}">
+      <div class="pd-num">${complete? checkIconSm() : n}</div>
+      <div class="pd-body">
+        <div class="pd-date">${niceDateShort(d)}${today?' · today':''}</div>
+        <div class="pd-refs">${refs.join(" · ")}</div>
+      </div>
+      <div class="pd-flags">
+        ${e.bookmark?`<svg viewBox="0 0 24 24" fill="currentColor" style="color:var(--gold)"><path d="M6 3.5h12V21l-6-4-6 4V3.5Z"/></svg>`:""}
+        ${e.note?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink-faint)"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg>`:""}
+      </div>
+    </div>`;
+    if(n===total) html += `</div>`;
+    else {
+      const nd = dateForDay(n+1);
+      const nlabel = monthName(nd.getMonth())+" "+nd.getFullYear();
+      if(nlabel!==curMonth) html += `</div>`;
+    }
+  }
+  return html;
+}
+function checkIconSm(){ return `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3" style="color:var(--green)"><path d="M5 12l5 5L19 7"/></svg>`; }
+
+function renderPlanCalendar(){
+  if(!hasStarted()){
+    return `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg><p>Set a start date to see the calendar view.</p><button class="btn sm primary" data-act="beginplan" style="margin-top:12px;">Begin the Plan</button></div>`;
+  }
+  if(!state.calCursor){
+    const sd = parseYMD(startDate);
+    state.calCursor = {y:sd.getFullYear(), m:sd.getMonth()};
+  }
+  const {y,m} = state.calCursor;
+  const first = new Date(y,m,1);
+  const startWeekday = first.getDay();
+  const daysInM = new Date(y,m+1,0).getDate();
+  const planStart = parseYMD(startDate);
+  const planEnd = addDays(planStart, totalScheduleDays()-1);
+
+  let cells = "";
+  for(let i=0;i<startWeekday;i++) cells += `<div class="cal-cell out"></div>`;
+  const todayReal = new Date();
+  for(let day=1; day<=daysInM; day++){
+    const cellDate = new Date(y,m,day);
+    const inRange = cellDate>=new Date(planStart.getFullYear(),planStart.getMonth(),planStart.getDate()) && cellDate<=new Date(planEnd.getFullYear(),planEnd.getMonth(),planEnd.getDate());
+    const isToday = fmtYMD(cellDate)===fmtYMD(todayReal);
+    if(!inRange){ cells += `<div class="cal-cell disabled ${isToday?'today':''}">${day}</div>`; continue; }
+    const dayNum = daysBetween(planStart, cellDate)+1;
+    const complete = isScheduleDayComplete(dayNum);
+    const partial = isScheduleDayPartial(dayNum);
+    const bm = getEntry(scheduleDayInfo(dayNum).planDay).bookmark;
+    cells += `<div class="cal-cell ${complete?'complete':(partial?'partial':'')} ${isToday?'today':''}" data-act="opendaymodal" data-day="${dayNum}">
+      ${bm?`<svg class="star" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3.5h12V21l-6-4-6 4V3.5Z"/></svg>`:""}
+      <span>${day}</span><span class="dot"></span>
+    </div>`;
+  }
+  const dow = ["S","M","T","W","T","F","S"].map(d=>`<div class="cal-dow">${d}</div>`).join("");
+  return `<div class="card">
+    <div class="cal-nav">
+      <button class="icon-btn" data-act="calprev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="lbl">${monthName(m)} ${y}</div>
+      <button class="icon-btn" data-act="calnext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <div class="cal-grid">${dow}${cells}</div>
+  </div>`;
+}
+
+function getAllHighlightEntries(){
+  return Object.keys(phl).filter(k=>phl[k] && phl[k].length).map(k=>{
+    const idx = k.indexOf("::");
+    const version = k.slice(0,idx), ref = k.slice(idx+2);
+    return { key:k, version, ref, count:phl[k].length };
+  });
+}
+
+function renderJournal(){
+  const q = state.searchQuery.trim().toLowerCase();
+
+  let noteEntries = [];
+  for(let n=1;n<=365;n++){
+    const e = getEntry(n);
+    if(e.note && e.note.trim()){
+      const haystack = (e.note+" "+PLAN[n-1].join(" ")).toLowerCase();
+      if(!q || haystack.includes(q)) noteEntries.push({n,e});
+    }
+  }
+  noteEntries.sort((a,b)=>b.n-a.n);
+
+  let hlEntries = getAllHighlightEntries().filter(h=>{
+    const version = VERSIONS[h.version] ? VERSIONS[h.version].label : h.version;
+    const haystack = (h.ref+" "+version).toLowerCase();
+    return !q || haystack.includes(q);
+  });
+
+  const bookmarks = [];
+  for(let n=1;n<=365;n++){ if(getEntry(n).bookmark){ const b=(!q || PLAN[n-1].join(" ").toLowerCase().includes(q)); if(b) bookmarks.push(n); } }
+
+  let notesBody;
+  if(noteEntries.length===0){
+    notesBody = `<div class="empty-state" style="padding:24px 16px;"><p>${q? "No notes match your search." : "Your notes from each day's reading will show up here."}</p></div>`;
+  } else {
+    notesBody = noteEntries.map(({n,e})=>`
+      <div class="journal-entry">
+        <div class="je-head" data-act="opendaymodal" data-day="${n}" style="cursor:pointer;"><span>Day ${n}${hasStarted()?" · "+niceDateShort(dateForDay(n)):""}</span><span>${PLAN[n-1].join(" · ")}</span></div>
+        <p data-act="opendaymodal" data-day="${n}" style="cursor:pointer;">${escapeHtml(e.note)}</p>
+        <div class="je-actions">
+          <button class="btn sm ghost" data-act="sharenote" data-day="${n}">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>
+            Share
+          </button>
+        </div>
+      </div>`).join("");
+  }
+
+  let hlBody = "";
+  if(hlEntries.length){
+    hlBody = hlEntries.map(h=>{
+      const v = VERSIONS[h.version];
+      return `<div class="plan-row" data-act="openreaderdirect" data-ref="${escapeHtml(h.ref)}" data-version="${h.version}">
+        <div class="pd-num"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--gold)"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg></div>
+        <div class="pd-body"><div class="pd-date">${v?v.label:h.version} · ${h.count} verse${h.count===1?'':'s'} highlighted</div><div class="pd-refs">${escapeHtml(h.ref)}</div></div>
+      </div>`;
+    }).join("");
+  } else if(q){
+    hlBody = `<div class="empty-state" style="padding:16px;"><p>No highlights match your search.</p></div>`;
+  }
+
+  let bmSection = "";
+  if(bookmarks.length){
+    bmSection = `<div class="section-title">Bookmarked readings</div>` + bookmarks.map(n=>`
+      <div class="plan-row" data-act="opendaymodal" data-day="${n}">
+        <div class="pd-num"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="color:var(--gold)"><path d="M6 3.5h12V21l-6-4-6 4V3.5Z"/></svg></div>
+        <div class="pd-body"><div class="pd-date">Day ${n}${hasStarted()?" · "+niceDateShort(dateForDay(n)):""}</div><div class="pd-refs">${PLAN[n-1].join(" · ")}</div></div>
+      </div>`).join("");
+  }
+
+  return `
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="journalSearch" placeholder="Search your notes and highlights…" value="${escapeHtml(state.searchQuery)}">
+    </div>
+    <div class="section-title">Notes</div>
+    ${notesBody}
+    <div class="section-title">Highlights</div>
+    ${hlBody || `<div class="empty-state" style="padding:16px;"><p>Verses you highlight while reading will show up here.</p></div>`}
+    ${bmSection}
+  `;
+}
+
+function defaultShareText(){
+  const n = nextIncompleteScheduleDay();
+  const total = totalScheduleDays();
+  if(n>total) return "We finished the M'Cheyne reading plan together! 🎉 — shared from Rooted in the Word";
+  const info = scheduleDayInfo(n);
+  const refs = info.refIdx.map(i=>PLAN[info.planDay-1][i]);
+  return `Today's reading (Day ${n} of ${total}): ${refs.join(", ")}. Join us in the M'Cheyne plan! — shared from Rooted in the Word`;
+}
+
+function renderGroup(){
+  const mode = state.groupMode;
+  return `
+    <div class="seg">
+      <button data-groupmode="roster" class="${mode==='roster'?'active':''}">Roster</button>
+      <button data-groupmode="meetings" class="${mode==='meetings'?'active':''}">Meetings</button>
+    </div>
+    ${mode==='roster' ? renderRoster() : renderMeetings()}
+  `;
+}
+
+function renderRoster(){
+  const selCount = state.selectedRoster.size;
+
+  const rows = roster.length===0
+    ? `<div class="empty-state" style="padding:30px 16px;"><p>Add people from your church or reading group to text or email them straight from here.</p></div>`
+    : roster.map(p=>{
+        if(state.editingRosterId===p.id){
+          return `<div class="roster-row">
+            <div class="roster-edit-form">
+              <input type="text" id="editName_${p.id}" value="${escapeHtml(p.name)}" placeholder="Name">
+              <input type="tel" id="editPhone_${p.id}" value="${escapeHtml(p.phone||"")}" placeholder="Phone (optional)">
+              <input type="email" id="editEmail_${p.id}" value="${escapeHtml(p.email||"")}" placeholder="Email (optional)">
+              <div style="display:flex;gap:6px;">
+                <button class="btn sm primary" data-act="saveperson" data-id="${p.id}">Save</button>
+                <button class="btn sm ghost" data-act="canceledit">Cancel</button>
+                <button class="btn sm danger" data-act="deleteperson" data-id="${p.id}" style="margin-left:auto;">Delete</button>
+              </div>
+            </div>
+          </div>`;
+        }
+        const on = state.selectedRoster.has(p.id);
+        const contact = [p.phone, p.email].filter(Boolean).join(" · ");
+        return `<div class="roster-row">
+          <button class="roster-check ${on?'on':''}" data-act="toggleroster" data-id="${p.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>
+          </button>
+          <div class="roster-body" data-act="editperson" data-id="${p.id}">
+            <div class="roster-name">${escapeHtml(p.name)}</div>
+            <div class="roster-contact">${escapeHtml(contact)||"No contact info"}</div>
+          </div>
+          <div class="roster-actions">
+            ${p.phone?`<a class="icon-btn" href="sms:${escapeHtml(p.phone)}" title="Text ${escapeHtml(p.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v12H8l-4 4V4Z"/></svg></a>`:""}
+            ${p.email?`<a class="icon-btn" href="mailto:${escapeHtml(p.email)}" title="Email ${escapeHtml(p.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h18v14H3V5Z"/><path d="m3 6 9 7 9-7"/></svg></a>`:""}
+          </div>
+        </div>`;
+      }).join("");
+
+  return `
+    <div class="day-footer" style="margin-bottom:16px;">
+      <button class="btn primary" id="openAddPersonBtn">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Add person
+      </button>
+      <button class="btn gold" id="openMessageBtn">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v12H8l-4 4V4Z"/></svg>
+        Message${selCount?` (${selCount})`:""}
+      </button>
+    </div>
+
+    <div class="section-title">Roster${roster.length?` (${roster.length})`:""}</div>
+    ${roster.length>0?`<div class="roster-selectbar">
+      <span>${selCount} selected</span>
+      <span style="display:flex;gap:10px;">
+        <button class="btn sm ghost" id="selectAllRosterBtn">Select all</button>
+        <button class="btn sm ghost" id="clearRosterSelBtn">Clear</button>
+      </span>
+    </div>`:""}
+    ${rows}
+  `;
+}
+
+function renderComposeModalBody(){
+  const text = state.shareDraft!==null ? state.shareDraft : defaultShareText();
+  const selPeople = roster.filter(p=>state.selectedRoster.has(p.id));
+  const textNums = selPeople.filter(p=>p.phone).map(p=>p.phone).join(",");
+  const emails = selPeople.filter(p=>p.email).map(p=>p.email).join(",");
+  const smsHref = "sms:"+encodeURIComponent(textNums)+(/iPad|iPhone|iPod/.test(navigator.userAgent)?"&":"?")+"body="+encodeURIComponent(text);
+  const mailHref = "mailto:?bcc="+encodeURIComponent(emails)+"&subject="+encodeURIComponent("Rooted in the Word")+"&body="+encodeURIComponent(text);
+  const names = selPeople.map(p=>p.name).join(", ");
+  return `
+    <div class="compose-card" style="border:none;box-shadow:none;padding:0;">
+      <div class="desc" style="font-size:12.5px;color:var(--ink-soft);">
+        ${selPeople.length? "To: "+escapeHtml(names) : "No one selected yet — go back and check people in your roster first."}
+      </div>
+      <textarea id="shareTextArea">${escapeHtml(text)}</textarea>
+      <div class="field-actions">
+        <button class="btn sm ghost" id="resetShareTextBtn">Use today's reading</button>
+      </div>
+      <div class="compose-actions">
+        <a class="btn gold sm" id="textSelectedLink" href="${selPeople.some(p=>p.phone)?smsHref:'#'}" ${selPeople.some(p=>p.phone)?'':'style="opacity:.4;pointer-events:none;"'}>Text selected (${selPeople.filter(p=>p.phone).length})</a>
+        <a class="btn sm" id="emailSelectedLink" href="${selPeople.some(p=>p.email)?mailHref:'#'}" ${selPeople.some(p=>p.email)?'':'style="opacity:.4;pointer-events:none;"'}>Email selected (${selPeople.filter(p=>p.email).length})</a>
+      </div>
+    </div>
+  `;
+}
+
+function openMessageModal(){
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-scrim" id="scrim">
+    <div class="modal-sheet">
+      <div class="modal-head"><h3>Message</h3>
+        <button class="icon-btn" id="closeMessageModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body">${renderComposeModalBody()}</div>
+    </div>
+  </div>`;
+  document.getElementById("closeMessageModal").onclick = closeModal;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+  bindDynamicEvents(root);
+}
+
+function openAddPersonModal(){
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-scrim" id="scrim">
+    <div class="modal-sheet">
+      <div class="modal-head"><h3>Add person</h3>
+        <button class="icon-btn" id="closeAddPersonModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="add-person-form" style="border:none;padding:0;">
+          <input type="text" id="newPersonName" placeholder="Name">
+          <input type="tel" id="newPersonPhone" placeholder="Phone (optional)">
+          <input type="email" id="newPersonEmail" placeholder="Email (optional)">
+          <button class="btn sm primary" id="addPersonBtn" style="align-self:flex-start;">Add to roster</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("closeAddPersonModal").onclick = closeModal;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+  bindDynamicEvents(root);
+}
+
+/* ---------- Meetings ---------- */
+function parseEventDate(ev){ return parseYMD(ev.date); }
+function sortedEvents(){ return [...events].sort((a,b)=> a.date===b.date ? (a.time||"").localeCompare(b.time||"") : a.date.localeCompare(b.date)); }
+function niceEventDate(ev){
+  const d = parseEventDate(ev);
+  let s = d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"});
+  if(ev.time) s += " · "+niceTime(ev.time);
+  return s;
+}
+function niceTime(t){
+  const [h,m] = t.split(":").map(Number);
+  const ampm = h>=12 ? "PM":"AM";
+  const h12 = ((h+11)%12)+1;
+  return h12+":"+String(m).padStart(2,"0")+" "+ampm;
+}
+function attendanceSummary(ev){
+  const vals = Object.values(ev.attendance||{});
+  if(!vals.length) return "No attendance taken";
+  const present = vals.filter(v=>v===true).length;
+  return present+" attended";
+}
+
+function renderMeetings(){
+  const listActive = state.meetingsMode==="list";
+  return `
+    <div class="seg">
+      <button data-meetingsmode="list" class="${listActive?'active':''}">List</button>
+      <button data-meetingsmode="cal" class="${!listActive?'active':''}">Calendar</button>
+    </div>
+    <div class="add-person-form">
+      <div class="lbl" style="font-size:13px;font-weight:700;">Schedule a meeting</div>
+      <input type="text" id="newEventTitle" placeholder="Title (e.g. Weekly Bible study)">
+      <input type="date" id="newEventDate" value="${fmtYMD(new Date())}">
+      <input type="time" id="newEventTime">
+      <input type="text" id="newEventLocation" placeholder="Location (optional)">
+      <input type="text" id="newEventNotes" placeholder="Notes (optional)">
+      <button class="btn sm primary" id="addEventBtn" style="align-self:flex-start;">Add meeting</button>
+    </div>
+    ${listActive ? renderMeetingsList() : renderMeetingsCalendar()}
+  `;
+}
+
+function renderMeetingsList(){
+  const list = sortedEvents();
+  if(!list.length){
+    return `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg><p>Meetings you schedule will show up here, with invites and attendance.</p></div>`;
+  }
+  return `<div class="section-title">Upcoming &amp; past</div>` + list.map(ev=>`
+    <div class="plan-row" data-act="openevent" data-id="${ev.id}">
+      <div class="pd-num"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></div>
+      <div class="pd-body">
+        <div class="pd-date">${niceEventDate(ev)}</div>
+        <div class="pd-refs">${escapeHtml(ev.title)}${ev.location?" · "+escapeHtml(ev.location):""}</div>
+      </div>
+      <div class="pd-flags"><span style="font-size:10.5px;color:var(--ink-faint);white-space:nowrap;">${attendanceSummary(ev)}</span></div>
+    </div>`).join("");
+}
+
+function renderMeetingsCalendar(){
+  if(!state.meetingsCalCursor){
+    const now = new Date();
+    state.meetingsCalCursor = {y:now.getFullYear(), m:now.getMonth()};
+  }
+  const {y,m} = state.meetingsCalCursor;
+  const first = new Date(y,m,1);
+  const startWeekday = first.getDay();
+  const daysInM = new Date(y,m+1,0).getDate();
+  const byDate = {};
+  events.forEach(ev=>{ (byDate[ev.date] = byDate[ev.date]||[]).push(ev); });
+
+  let cells = "";
+  for(let i=0;i<startWeekday;i++) cells += `<div class="cal-cell out"></div>`;
+  const todayReal = new Date();
+  for(let day=1; day<=daysInM; day++){
+    const cellDate = new Date(y,m,day);
+    const key = fmtYMD(cellDate);
+    const isToday = key===fmtYMD(todayReal);
+    const dayEvents = byDate[key]||[];
+    if(dayEvents.length===1){
+      cells += `<div class="cal-cell ${isToday?'today':''} complete" data-act="openevent" data-id="${dayEvents[0].id}"><span>${day}</span><span class="dot"></span></div>`;
+    } else if(dayEvents.length>1){
+      cells += `<div class="cal-cell ${isToday?'today':''} complete" data-act="opendatepicker" data-date="${key}"><span>${day}</span><span class="dot"></span></div>`;
+    } else {
+      cells += `<div class="cal-cell ${isToday?'today':''}">${day}</div>`;
+    }
+  }
+  const dow = ["S","M","T","W","T","F","S"].map(d=>`<div class="cal-dow">${d}</div>`).join("");
+  return `<div class="card">
+    <div class="cal-nav">
+      <button class="icon-btn" data-act="meetcalprev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="lbl">${monthName(m)} ${y}</div>
+      <button class="icon-btn" data-act="meetcalnext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <div class="cal-grid">${dow}${cells}</div>
+  </div>`;
+}
+
+function buildICS(ev){
+  const dt = ev.date.replace(/-/g,"");
+  const timePart = ev.time ? ev.time.replace(":","")+"00" : "090000";
+  const dtstart = dt+"T"+timePart;
+  const stamp = new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+  const esc = s => (s||"").replace(/[\n\r]+/g," ").replace(/([,;])/g,"\\$1");
+  return [
+    "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Rooted in the Word//EN","BEGIN:VEVENT",
+    "UID:"+ev.id+"@rootedintheword","DTSTAMP:"+stamp,"DTSTART:"+dtstart,
+    "SUMMARY:"+esc(ev.title),
+    ev.location?"LOCATION:"+esc(ev.location):"",
+    ev.notes?"DESCRIPTION:"+esc(ev.notes):"",
+    "END:VEVENT","END:VCALENDAR"
+  ].filter(Boolean).join("\r\n");
+}
+
+function openEventModal(id){
+  state.viewingEventId = id;
+  state.eventInviteSelected = new Set();
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-scrim" id="scrim">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <h3>Meeting</h3>
+        <button class="icon-btn" id="closeEventModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body" id="eventModalBody">${renderEventDetail(id)}</div>
+    </div>
+  </div>`;
+  document.getElementById("closeEventModal").onclick = closeModal;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+  bindDynamicEvents(root);
+}
+
+function renderEventDetail(id){
+  const ev = events.find(e=>e.id===id);
+  if(!ev) return `<div class="empty-state"><p>This meeting was deleted.</p></div>`;
+
+  if(state.editingEventId===id){
+    return `<div class="add-person-form">
+      <input type="text" id="editEventTitle_${id}" value="${escapeHtml(ev.title)}" placeholder="Title">
+      <input type="date" id="editEventDate_${id}" value="${ev.date}">
+      <input type="time" id="editEventTime_${id}" value="${ev.time||''}">
+      <input type="text" id="editEventLocation_${id}" value="${escapeHtml(ev.location||'')}" placeholder="Location">
+      <input type="text" id="editEventNotes_${id}" value="${escapeHtml(ev.notes||'')}" placeholder="Notes">
+      <div style="display:flex;gap:6px;">
+        <button class="btn sm primary" data-act="saveevent" data-id="${id}">Save</button>
+        <button class="btn sm ghost" data-act="canceleventedit">Cancel</button>
+        <button class="btn sm danger" data-act="deleteevent" data-id="${id}" style="margin-left:auto;">Delete</button>
+      </div>
+    </div>`;
+  }
+
+  const icsUrl = "data:text/calendar;charset=utf-8,"+encodeURIComponent(buildICS(ev));
+  const selPeople = roster.filter(p=>state.eventInviteSelected.has(p.id));
+  const inviteText = `You're invited: ${ev.title}\n${niceEventDate(ev)}${ev.location?"\nLocation: "+ev.location:""}${ev.notes?"\n"+ev.notes:""}\n\n— shared from Rooted in the Word`;
+  const textNums = selPeople.filter(p=>p.phone).map(p=>p.phone).join(",");
+  const emails = selPeople.filter(p=>p.email).map(p=>p.email).join(",");
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const smsHref = "sms:"+encodeURIComponent(textNums)+(isIOS?"&":"?")+"body="+encodeURIComponent(inviteText);
+  const mailHref = "mailto:?bcc="+encodeURIComponent(emails)+"&subject="+encodeURIComponent(ev.title)+"&body="+encodeURIComponent(inviteText);
+
+  const inviteRows = roster.length===0
+    ? `<div class="empty-state" style="padding:16px;"><p>Add people to your roster first to invite them.</p></div>`
+    : roster.map(p=>{
+        const on = state.eventInviteSelected.has(p.id);
+        return `<div class="roster-row">
+          <button class="roster-check ${on?'on':''}" data-act="toggleinvite" data-id="${p.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>
+          </button>
+          <div class="roster-body"><div class="roster-name">${escapeHtml(p.name)}</div></div>
+        </div>`;
+      }).join("");
+
+  const attendRows = roster.length===0
+    ? `<div class="empty-state" style="padding:16px;"><p>Add people to your roster to take attendance.</p></div>`
+    : roster.map(p=>{
+        const status = (ev.attendance||{})[p.id];
+        return `<div class="roster-row">
+          <div class="roster-body"><div class="roster-name">${escapeHtml(p.name)}</div></div>
+          <div class="roster-actions">
+            <button class="btn sm ${status===true?'gold':''}" data-act="attend" data-id="${id}" data-person="${p.id}" data-val="true">Present</button>
+            <button class="btn sm ${status===false?'danger':''}" data-act="attend" data-id="${id}" data-person="${p.id}" data-val="false">Absent</button>
+          </div>
+        </div>`;
+      }).join("");
+
+  return `
+    <div class="hero" style="margin-bottom:16px;">
+      <div class="eyebrow">Meeting</div>
+      <div class="day-title" style="font-size:21px;">${escapeHtml(ev.title)}</div>
+      <div class="day-date">${niceEventDate(ev)}${ev.location?" · "+escapeHtml(ev.location):""}</div>
+      ${ev.notes?`<div style="font-size:13.5px;color:var(--ink-soft);margin-top:8px;">${escapeHtml(ev.notes)}</div>`:""}
+      <div class="day-footer">
+        <button class="btn sm" data-act="editevent" data-id="${id}">Edit</button>
+        <a class="btn sm" href="${icsUrl}" download="${escapeHtml(ev.title).replace(/[^a-z0-9]/gi,'-')}.ics">Download .ics</a>
+      </div>
+    </div>
+
+    <div class="section-title">Invite</div>
+    <div class="compose-card">
+      <div class="desc" style="font-size:12px;color:var(--ink-soft);">Select people, then send the invite by text or email.</div>
+      ${inviteRows}
+      <div class="compose-actions">
+        <a class="btn gold sm" href="${selPeople.some(p=>p.phone)?smsHref:'#'}" ${selPeople.some(p=>p.phone)?'':'style="opacity:.4;pointer-events:none;"'}>Text invite (${selPeople.filter(p=>p.phone).length})</a>
+        <a class="btn sm" href="${selPeople.some(p=>p.email)?mailHref:'#'}" ${selPeople.some(p=>p.email)?'':'style="opacity:.4;pointer-events:none;"'}>Email invite (${selPeople.filter(p=>p.email).length})</a>
+      </div>
+    </div>
+
+    <div class="section-title">Attendance</div>
+    ${attendRows}
+  `;
+}
+
+function renderSettings(){
+  const key = settings.esvKey || "";
+  const versionRows = VERSION_ORDER.map(code=>{
+    const v = VERSIONS[code];
+    const sel = settings.bibleVersion===code;
+    return `<div class="version-row ${sel?'sel':''}" data-act="setversion" data-version="${code}">
+      <div><div class="vname">${v.label} <span style="font-weight:400;color:var(--ink-faint);">— ${v.full}</span></div>
+      <div class="vfull">${v.requiresKey? "Requires your free ESV API key" : "Public domain · no key needed"}</div></div>
+      <button class="btn sm ${sel?'gold':''}">${sel? "Selected" : "Use"}</button>
+    </div>`;
+  }).join("");
+
+  return `
+    <div class="section-title">Appearance</div>
+    <div class="set-group">
+      <div class="set-row">
+        <div><div class="lbl">Theme</div></div>
+        <div class="theme-opt">
+          <button data-theme-opt="light" class="${settings.theme==='light'?'sel':''}">Light</button>
+          <button data-theme-opt="dark" class="${settings.theme==='dark'?'sel':''}">Dark</button>
+          <button data-theme-opt="system" class="${settings.theme==='system'?'sel':''}">System</button>
+        </div>
+      </div>
+      <div class="set-row">
+        <div><div class="lbl">Reading font size</div></div>
+        <div class="stepper"><button data-act="fontdown">–</button><span>${settings.fontSize}px</span><button data-act="fontup">+</button></div>
+      </div>
+      <div class="set-row">
+        <div><div class="lbl">Reading font</div></div>
+        <div class="font-opt">
+          <button data-font-opt="serif" class="${settings.fontFamily==='serif'?'sel':''}" style="font-family:'Lora',serif;">Serif</button>
+          <button data-font-opt="sans" class="${settings.fontFamily==='sans'?'sel':''}" style="font-family:'Atkinson Hyperlegible',sans-serif;">Reading</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Bible versions</div>
+    <div class="set-group">
+      <div class="key-row">
+        <div class="desc">Choose which translation opens by default when you tap "Read in app." NIV isn't included — it's commercially licensed and not available for free/solo-developer use; these public‑domain options are open alternatives to compare against the ESV.</div>
+        <div class="version-list">${versionRows}</div>
+      </div>
+      <div class="key-row" style="border-top:1px solid var(--border);">
+        <div class="lbl">ESV API key</div>
+        <div class="desc">Get a free key at <a href="https://api.esv.org/account/create-application/" target="_blank" rel="noopener">api.esv.org</a>. Used only from your device, for personal non‑commercial reading — never sold or shared.</div>
+        <input type="password" id="esvKeyInput" placeholder="Paste your ESV API key" value="${escapeHtml(key)}">
+        <div class="field-actions">
+          <button class="btn sm" id="saveKeyBtn">Save key</button>
+          <button class="btn sm ghost" id="testKeyBtn">Test connection</button>
+        </div>
+        <div class="key-status" id="keyStatus"></div>
+      </div>
+    </div>
+
+    <div class="section-title">Plan</div>
+    <div class="set-group">
+      <div class="set-row">
+        <div><div class="lbl">Pace</div><div class="desc">Switch anytime — your checkmarks are kept either way.</div></div>
+        <div class="pace-opt">
+          <button data-pace-opt="1yr" class="${settings.pace==='1yr'?'sel':''}">1 Year</button>
+          <button data-pace-opt="2yr" class="${settings.pace==='2yr'?'sel':''}">2 Years</button>
+        </div>
+      </div>
+      <div class="key-row">
+        <div class="lbl">${hasStarted() ? "Start date" : "Begin the plan"}</div>
+        <div class="desc">${hasStarted() ? "Changes which calendar date each day is scheduled for. Your checklist progress is kept." : "Pick a date to start your schedule. Anything you've already checked off or noted while exploring is kept."}</div>
+        <input type="date" id="startDateInput" value="${startDate || fmtYMD(new Date())}">
+        <div class="field-actions"><button class="btn sm ${hasStarted()?'':'primary'}" id="saveStartBtn">${hasStarted() ? "Update start date" : "Begin the Plan"}</button></div>
+      </div>
+      ${hasStarted()?`<div class="set-row">
+        <div><div class="lbl">Restart plan</div><div class="desc">Keep the same start date, clear all checkmarks and notes.</div></div>
+        <button class="btn sm danger" id="restartBtn">Restart</button>
+      </div>
+      <div class="set-row">
+        <div><div class="lbl">Stop / cancel plan</div><div class="desc">Erase progress and return to setup.</div></div>
+        <button class="btn sm danger" id="cancelPlanBtn">Cancel plan</button>
+      </div>`:``}
+    </div>
+
+    <div class="section-title">Data</div>
+    <div class="set-group">
+      <div class="set-row">
+        <div><div class="lbl">Export backup</div><div class="desc">Download all progress, notes and settings as a file.</div></div>
+        <button class="btn sm" id="exportBtn">Export</button>
+      </div>
+      <div class="set-row">
+        <div><div class="lbl">Import backup</div><div class="desc">Restore from a previously exported file.</div></div>
+        <label class="btn sm" style="margin:0;">Import<input type="file" id="importInput" accept="application/json" style="display:none;"></label>
+      </div>
+      <div class="set-row">
+        <div><div class="lbl">Reset everything</div><div class="desc">Erase all app data from this device.</div></div>
+        <button class="btn sm danger" id="resetAllBtn">Reset</button>
+      </div>
+    </div>
+
+    <div class="section-title">Group contacts</div>
+    <div class="set-group">
+      <div class="set-row">
+        <div><div class="lbl">Export contacts</div><div class="desc">Save just your roster (names, phone, email) as a file to send to someone else using the app.</div></div>
+        <button class="btn sm" id="exportContactsBtn">Export</button>
+      </div>
+      <div class="set-row">
+        <div><div class="lbl">Import contacts</div><div class="desc">Add contacts from a file someone shared with you. Merges into your roster — nothing is overwritten.</div></div>
+        <label class="btn sm" style="margin:0;">Import<input type="file" id="importContactsInput" accept="application/json" style="display:none;"></label>
+      </div>
+    </div>
+
+    <div class="about-block">
+      Rooted in the Word is a companion for the classic M'Cheyne Bible reading plan — read alongside a physical Bible, or in‑app via free Bible text services. Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), copyright © 2001 by Crossway. Used by permission. All rights reserved. <a href="https://www.esv.org" target="_blank" rel="noopener">www.esv.org</a>. KJV, WEB, ASV and BBE are public domain, served via bible-api.com. This app is not affiliated with Crossway, ESV.org, or bible-api.com, and passage text is not stored on this device between sessions.
+    </div>
+  `;
+}
+
+function openNoteModal(planDay, returnTo){
+  const root = document.getElementById("modalRoot");
+  const e = getEntry(planDay);
+  const closeFn = returnTo ? (()=>{ openReader(returnTo.day, returnTo.ref); }) : closeModal;
+  root.innerHTML = `<div class="modal-scrim" id="scrim">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <h3>Notes — Day ${planDay}</h3>
+        <button class="icon-btn" id="closeNoteModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">${escapeHtml(PLAN[planDay-1].join(" · "))}</div>
+        <textarea id="fullNoteTextarea" style="width:100%;min-height:50vh;resize:vertical;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:14px 16px;font-size:15px;line-height:1.6;font-family:var(--ui);" placeholder="What stood out to you? Questions, prayers, cross-references…">${escapeHtml(e.note)}</textarea>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("closeNoteModal").onclick = closeFn;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeFn(); });
+  const ta = document.getElementById("fullNoteTextarea");
+  ta.addEventListener("input", ()=>{ setEntry(planDay, {note: ta.value}); });
+  ta.focus();
+}
+
+function openDayModal(n){
+  state.viewingDay = n;
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-scrim" id="scrim">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <h3>Day ${n}</h3>
+        <button class="icon-btn" id="closeDayModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body" id="dayModalBody">${renderDayCard(n, {suppressScheduleNote:true})}</div>
+    </div>
+  </div>`;
+  document.getElementById("closeDayModal").onclick = closeModal;
+  document.getElementById("scrim").addEventListener("click", (e)=>{ if(e.target.id==="scrim") closeModal(); });
+  bindDynamicEvents(root);
+}
+function closeModal(){
+  state.viewingDay=null; state.viewingEventId=null; state.editingEventId=null;
+  document.getElementById("modalRoot").innerHTML=""; renderShell();
+}
+
+function readingListForDay(day){
+  const info = scheduleDayInfo(day);
+  return info.refIdx.map(i=>PLAN[info.planDay-1][i]);
+}
+
+function openReader(day, ref){
+  const root = document.getElementById("modalRoot");
+  const versionOptions = VERSION_ORDER.map(c=>`<option value="${c}" ${settings.bibleVersion===c?'selected':''}>${VERSIONS[c].label}</option>`).join("");
+
+  const total = totalScheduleDays();
+  const hasNav = day>0;
+  let atStart = true, atEnd = true;
+  if(hasNav){
+    const refs = readingListForDay(day);
+    const idx = refs.indexOf(ref);
+    atStart = day<=1 && idx<=0;
+    atEnd = day>=total && idx>=refs.length-1;
+  }
+
+  root.innerHTML = `<div class="modal-scrim" id="scrim">
+    <div class="modal-sheet" style="max-width:680px;">
+      <div class="modal-head">
+        ${hasNav?`<button class="icon-btn" id="readerPrev" ${atStart?'disabled':''} title="Previous reading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>`:'<span></span>'}
+        <h3 style="flex:1;text-align:center;">${escapeHtml(ref)}</h3>
+        ${hasNav?`<button class="icon-btn" id="readerNext" ${atEnd?'disabled':''} title="Next reading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>`:''}
+        <button class="icon-btn" id="closeReader"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="reader-toolbar">
+        <select class="reader-version-select" id="readerVersionSelect">${versionOptions}</select>
+        <button class="icon-btn" id="fontDownR">A–</button>
+        <button class="icon-btn" id="fontUpR">A+</button>
+        <button class="btn sm ${settings.fontFamily==='serif'?'gold':''}" id="fontSerifR">Serif</button>
+        <button class="btn sm ${settings.fontFamily==='sans'?'gold':''}" id="fontSansR">Reading</button>
+        <span style="flex:1"></span>
+        ${hasNav?`<button class="icon-btn" id="readerNotesBtn" title="Notes for this reading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg></button>`:""}
+        <button class="btn sm ghost" id="clearHlBtn">Clear highlights</button>
+      </div>
+      <div class="reader-body">
+        <div style="font-size:11.5px;color:var(--ink-faint);margin-bottom:10px;">Tap any verse to highlight it — tap again to remove.</div>
+        <div id="readerText" class="${settings.fontFamily==='sans'?'f-sans':'f-serif'}" style="font-size:${settings.fontSize}px;"><div class="reader-status" id="readerStatus"><span>Loading…</span></div></div>
+        <div class="copyright-note" id="readerCopyright"></div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("scrim").addEventListener("click", (e)=>{ if(e.target.id==="scrim") closeModal(); });
+  document.getElementById("closeReader").onclick = closeModal;
+  document.getElementById("fontDownR").onclick = ()=>{ settings.fontSize=Math.max(14,settings.fontSize-2); saveSettings(); applyReaderFont(); };
+  document.getElementById("fontUpR").onclick = ()=>{ settings.fontSize=Math.min(32,settings.fontSize+2); saveSettings(); applyReaderFont(); };
+  document.getElementById("fontSerifR").onclick = ()=>{ settings.fontFamily="serif"; saveSettings(); applyReaderFont(); document.getElementById("fontSerifR").classList.add("gold"); document.getElementById("fontSansR").classList.remove("gold"); };
+  document.getElementById("fontSansR").onclick = ()=>{ settings.fontFamily="sans"; saveSettings(); applyReaderFont(); document.getElementById("fontSansR").classList.add("gold"); document.getElementById("fontSerifR").classList.remove("gold"); };
+  document.getElementById("clearHlBtn").onclick = ()=>{
+    const key = settings.bibleVersion+"::"+ref;
+    delete phl[key]; saveHl();
+    renderVersesFromMemory(ref); toast("Highlights cleared");
+  };
+  document.getElementById("readerVersionSelect").onchange = (e)=>{ settings.bibleVersion = e.target.value; saveSettings(); loadPassage(ref); };
+  const notesBtn = document.getElementById("readerNotesBtn");
+  if(notesBtn) notesBtn.onclick = ()=>{ openNoteModal(scheduleDayInfo(day).planDay, {day, ref}); };
+
+  if(hasNav){
+    const prevBtn = document.getElementById("readerPrev");
+    const nextBtn = document.getElementById("readerNext");
+    if(prevBtn) prevBtn.onclick = ()=>{
+      const refs = readingListForDay(day);
+      const idx = refs.indexOf(ref);
+      if(idx>0){ openReader(day, refs[idx-1]); }
+      else if(day>1){ const prevRefs = readingListForDay(day-1); openReader(day-1, prevRefs[prevRefs.length-1]); }
+    };
+    if(nextBtn) nextBtn.onclick = ()=>{
+      const refs = readingListForDay(day);
+      const idx = refs.indexOf(ref);
+      if(idx<refs.length-1){ openReader(day, refs[idx+1]); }
+      else if(day<total){ const nextRefs = readingListForDay(day+1); openReader(day+1, nextRefs[0]); }
+    };
+  }
+
+  loadPassage(ref);
+  setupVerseTapToHighlight(ref);
+}
+function applyReaderFont(){
+  const el = document.getElementById("readerText");
+  if(!el) return;
+  el.style.fontSize = settings.fontSize+"px";
+  el.classList.toggle("f-serif", settings.fontFamily==="serif");
+  el.classList.toggle("f-sans", settings.fontFamily==="sans");
+}
+
+async function loadPassage(ref){
+  const el = document.getElementById("readerText");
+  const cr = document.getElementById("readerCopyright");
+  if(!el) return;
+  const version = settings.bibleVersion;
+  const v = VERSIONS[version];
+  if(cr) cr.innerHTML = v.requiresKey
+    ? `${escapeHtml(v.copyright)} <a href="${v.link}" target="_blank" rel="noopener">www.esv.org</a>`
+    : `${v.full} — public domain. Served via <a href="${v.link}" target="_blank" rel="noopener">bible-api.com</a>.`;
+
+  if(v.requiresKey && !settings.esvKey){
+    el.innerHTML = `<div class="reader-status">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+      <div>Add a free ESV API key in Settings, or switch to KJV / WEB / ASV / BBE above — no key needed.</div>
+    </div>`;
+    return;
+  }
+  const memKey = version+"::"+ref;
+  if(sessionPassageCache[memKey]){ renderVersesFromMemory(ref); return; }
+
+  el.innerHTML = `<div class="reader-status"><span>Loading ${escapeHtml(ref)} (${v.label})…</span></div>`;
+  try{
+    const verses = version==="esv" ? await fetchESVVerses(ref) : await fetchBibleApiVerses(ref, version);
+    sessionPassageCache[memKey] = verses;
+    renderVersesFromMemory(ref);
+  }catch(err){
+    el.innerHTML = `<div class="reader-status">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+      <div>Couldn't load this passage (${escapeHtml(err.message||"network error")}).</div>
+      <div style="margin-top:6px;font-size:12.5px;">This can happen if the app is opened as a local file rather than hosted, or if the API key is invalid.</div>
+    </div>`;
+  }
+}
+function renderVersesFromMemory(ref){
+  const el = document.getElementById("readerText");
+  if(!el) return;
+  const version = settings.bibleVersion;
+  const memKey = version+"::"+ref;
+  const verses = sessionPassageCache[memKey];
+  if(!verses){ loadPassage(ref); return; }
+  const hlKey = version+"::"+ref;
+  const hlSet = new Set(phl[hlKey]||[]);
+  el.innerHTML = "<p>"+verses.map((v,idx)=>
+    `<span class="verse ${hlSet.has(idx)?'hl':''}" data-idx="${idx}"><sup class="vnum">${v.label}</sup>${escapeHtml(v.text)} </span>`
+  ).join("")+"</p>";
+}
+async function fetchESVVerses(ref){
+  const q = toFullRef(ref);
+  const url = "https://api.esv.org/v3/passage/text/?q="+encodeURIComponent(q)+
+    "&include-headings=false&include-footnotes=false&include-verse-numbers=true&include-short-copyright=false&include-passage-references=false";
+  const res = await fetch(url, { headers:{ "Authorization":"Token "+settings.esvKey } });
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const data = await res.json();
+  const text = (data.passages && data.passages[0]) ? data.passages[0].trim() : "";
+  if(!text) throw new Error("empty passage");
+  const parts = text.split(/\[(\d+)\]\s*/);
+  const verses = [];
+  for(let i=1;i<parts.length;i+=2){
+    const label = parts[i];
+    const t = (parts[i+1]||"").trim();
+    if(t) verses.push({label, text:t});
+  }
+  if(!verses.length) verses.push({label:"", text});
+  return verses;
+}
+async function fetchBibleApiVerses(ref, version){
+  const q = toFullRef(ref);
+  const url = "https://bible-api.com/"+encodeURIComponent(q)+"?translation="+version;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  if(data.verses && data.verses.length) return data.verses.map(v=>({ label:(v.chapter+":"+v.verse), text: v.text.trim() }));
+  if(data.text) return [{label:"", text:data.text.trim()}];
+  throw new Error("empty passage");
+}
+
+function setupVerseTapToHighlight(ref){
+  const container = document.getElementById("readerText");
+  if(!container) return;
+  // container is recreated fresh by openReader each time, so no need to remove a prior listener —
+  // but guard anyway in case this is ever called twice on the same node.
+  if(container._tapBound) return;
+  container._tapBound = true;
+  container.addEventListener("click", (e)=>{
+    const v = e.target.closest(".verse");
+    if(!v) return;
+    const idx = parseInt(v.dataset.idx, 10);
+    const key = settings.bibleVersion+"::"+ref;
+    const cur = new Set(phl[key]||[]);
+    if(cur.has(idx)) cur.delete(idx); else cur.add(idx);
+    phl[key] = Array.from(cur).sort((a,b)=>a-b);
+    saveHl();
+    renderVersesFromMemory(ref);
+  });
+}
+
+function bindViewEvents(){ bindDynamicEvents(document.getElementById("view")); }
+
+function bindDynamicEvents(root){
+  root.querySelectorAll("[data-act]").forEach(el=>{
+    if(el._clickBound) return; el._clickBound = true;
+    el.addEventListener("click",(e)=>{
+      const act = el.dataset.act;
+      const day = parseInt(el.dataset.day,10);
+      if(act==="toggle"){
+        const key = el.dataset.key;
+        const cur = getEntry(day)[key];
+        setEntry(day, {[key]: !cur});
+        rerenderContext(parseInt(el.dataset.sched,10)||day);
+      } else if(act==="complete"){
+        const info = scheduleDayInfo(parseInt(el.dataset.sched,10)||day);
+        const e = getEntry(day);
+        const allOn = info.keys.every(k=>e[k]);
+        const patch = {}; info.keys.forEach(k=>patch[k]=!allOn);
+        setEntry(day, patch);
+        rerenderContext(parseInt(el.dataset.sched,10)||day);
+      } else if(act==="quickcomplete"){
+        const info = scheduleDayInfo(parseInt(el.dataset.sched,10)||day);
+        const patch = {}; info.keys.forEach(k=>patch[k]=true);
+        setEntry(day, patch);
+        renderShell();
+      } else if(act==="bookmark"){
+        setEntry(day, {bookmark: !getEntry(day).bookmark});
+        rerenderContext(state.viewingDay!==null?state.viewingDay:day);
+      } else if(act==="read"){
+        openReader(day, el.dataset.ref);
+      } else if(act==="openreaderdirect"){
+        openReader(0, el.dataset.ref);
+        if(el.dataset.version){ settings.bibleVersion = el.dataset.version; saveSettings(); document.getElementById("readerVersionSelect").value = el.dataset.version; loadPassage(el.dataset.ref); }
+      } else if(act==="nav"){
+        if(state.viewingDay!==null){ openDayModal(day); } else { renderTodayPinned(day); }
+      } else if(act==="gotoday"){
+        renderTodayPinned(day);
+      } else if(act==="opendaymodal"){
+        openDayModal(day);
+      } else if(act==="calprev"){
+        state.calCursor.m--; if(state.calCursor.m<0){state.calCursor.m=11;state.calCursor.y--;}
+        renderShell();
+      } else if(act==="calnext"){
+        state.calCursor.m++; if(state.calCursor.m>11){state.calCursor.m=0;state.calCursor.y++;}
+        renderShell();
+      } else if(act==="fontup"){
+        settings.fontSize = Math.min(32, settings.fontSize+2); saveSettings(); renderShell();
+      } else if(act==="fontdown"){
+        settings.fontSize = Math.max(14, settings.fontSize-2); saveSettings(); renderShell();
+      } else if(act==="setversion"){
+        settings.bibleVersion = el.dataset.version; saveSettings(); renderShell();
+      } else if(act==="beginplan"){
+        switchToOnboarding();
+      } else if(act==="opennotemodal"){
+        openNoteModal(day);
+      } else if(act==="sharenote"){
+        const e = getEntry(day);
+        state.shareDraft = `Day ${day} (${niceDateShort(dateForDay(day))}) — ${PLAN[day-1].join(", ")}\n\n${e.note}\n\n— shared from Rooted in the Word`;
+        state.tab = "group";
+        renderShell();
+      } else if(act==="toggleroster"){
+        const id = el.dataset.id;
+        if(state.selectedRoster.has(id)) state.selectedRoster.delete(id); else state.selectedRoster.add(id);
+        renderShell();
+      } else if(act==="editperson"){
+        state.editingRosterId = el.dataset.id; renderShell();
+      } else if(act==="canceledit"){
+        state.editingRosterId = null; renderShell();
+      } else if(act==="saveperson"){
+        const id = el.dataset.id;
+        const p = roster.find(r=>r.id===id);
+        if(p){
+          p.name = document.getElementById("editName_"+id).value.trim() || p.name;
+          p.phone = document.getElementById("editPhone_"+id).value.trim();
+          p.email = document.getElementById("editEmail_"+id).value.trim();
+          saveRoster();
+        }
+        state.editingRosterId = null; renderShell();
+      } else if(act==="deleteperson"){
+        const id = el.dataset.id;
+        roster = roster.filter(r=>r.id!==id);
+        state.selectedRoster.delete(id);
+        saveRoster();
+        state.editingRosterId = null; renderShell();
+      } else if(act==="openevent"){
+        openEventModal(el.dataset.id);
+      } else if(act==="opendatepicker"){
+        openDateEventsModal(el.dataset.date);
+      } else if(act==="meetcalprev"){
+        state.meetingsCalCursor.m--; if(state.meetingsCalCursor.m<0){state.meetingsCalCursor.m=11;state.meetingsCalCursor.y--;}
+        renderShell();
+      } else if(act==="meetcalnext"){
+        state.meetingsCalCursor.m++; if(state.meetingsCalCursor.m>11){state.meetingsCalCursor.m=0;state.meetingsCalCursor.y++;}
+        renderShell();
+      } else if(act==="toggleinvite"){
+        const id = el.dataset.id;
+        if(state.eventInviteSelected.has(id)) state.eventInviteSelected.delete(id); else state.eventInviteSelected.add(id);
+        rerenderEventModal();
+      } else if(act==="attend"){
+        const evId = el.dataset.id, personId = el.dataset.person, val = el.dataset.val==="true";
+        const ev = events.find(x=>x.id===evId);
+        if(ev){
+          ev.attendance = ev.attendance||{};
+          ev.attendance[personId] = ev.attendance[personId]===val ? undefined : val;
+          if(ev.attendance[personId]===undefined) delete ev.attendance[personId];
+          saveEvents();
+        }
+        rerenderEventModal();
+      } else if(act==="editevent"){
+        state.editingEventId = el.dataset.id; rerenderEventModal();
+      } else if(act==="canceleventedit"){
+        state.editingEventId = null; rerenderEventModal();
+      } else if(act==="saveevent"){
+        const id = el.dataset.id;
+        const ev = events.find(x=>x.id===id);
+        if(ev){
+          ev.title = document.getElementById("editEventTitle_"+id).value.trim() || ev.title;
+          ev.date = document.getElementById("editEventDate_"+id).value || ev.date;
+          ev.time = document.getElementById("editEventTime_"+id).value;
+          ev.location = document.getElementById("editEventLocation_"+id).value.trim();
+          ev.notes = document.getElementById("editEventNotes_"+id).value.trim();
+          saveEvents();
+        }
+        state.editingEventId = null; rerenderEventModal();
+      } else if(act==="deleteevent"){
+        events = events.filter(x=>x.id!==el.dataset.id);
+        saveEvents();
+        closeModal();
+      }
+    });
+  });
+  root.querySelectorAll("textarea[data-act='note']").forEach(ta=>{
+    if(ta._noteBound) return; ta._noteBound = true;
+    ta.addEventListener("input", ()=>{
+      const day = parseInt(ta.dataset.day,10);
+      setEntry(day, {note: ta.value});
+    });
+  });
+  root.querySelectorAll("[data-planmode]").forEach(el=>{
+    if(el._bound) return; el._bound=true;
+    el.addEventListener("click", ()=>{ state.planMode = el.dataset.planmode; renderShell(); });
+  });
+  root.querySelectorAll("[data-groupmode]").forEach(el=>{
+    if(el._bound) return; el._bound=true;
+    el.addEventListener("click", ()=>{ state.groupMode = el.dataset.groupmode; renderShell(); });
+  });
+  root.querySelectorAll("[data-meetingsmode]").forEach(el=>{
+    if(el._bound) return; el._bound=true;
+    el.addEventListener("click", ()=>{ state.meetingsMode = el.dataset.meetingsmode; renderShell(); });
+  });
+  root.querySelectorAll("[data-theme-opt]").forEach(el=>{
+    if(el._bound) return; el._bound=true;
+    el.addEventListener("click", ()=>{ settings.theme = el.dataset.themeOpt; saveSettings(); applyTheme(); renderShell(); });
+  });
+  root.querySelectorAll("[data-font-opt]").forEach(el=>{
+    if(el._bound) return; el._bound=true;
+    el.addEventListener("click", ()=>{ settings.fontFamily = el.dataset.fontOpt; saveSettings(); renderShell(); });
+  });
+  root.querySelectorAll("[data-pace-opt]").forEach(el=>{
+    if(el._bound) return; el._bound=true;
+    el.addEventListener("click", ()=>{ settings.pace = el.dataset.paceOpt; saveSettings(); toast("Pace updated"); renderShell(); });
+  });
+
+  const journalSearch = root.querySelector("#journalSearch");
+  if(journalSearch && !journalSearch._bound){
+    journalSearch._bound = true;
+    journalSearch.addEventListener("input", ()=>{
+      state.searchQuery = journalSearch.value; renderShell();
+      setTimeout(()=>{ const j=document.getElementById("journalSearch"); if(j){ j.focus(); j.setSelectionRange(j.value.length,j.value.length);} },0);
+    });
+  }
+  bindSettingsEvents(root);
+  bindGroupEvents(root);
+}
+
+function bindGroupEvents(root){
+  const openAddBtn = root.querySelector("#openAddPersonBtn");
+  if(openAddBtn && !openAddBtn._bound){ openAddBtn._bound = true; openAddBtn.addEventListener("click", openAddPersonModal); }
+  const openMsgBtn = root.querySelector("#openMessageBtn");
+  if(openMsgBtn && !openMsgBtn._bound){ openMsgBtn._bound = true; openMsgBtn.addEventListener("click", openMessageModal); }
+
+  const addBtn = root.querySelector("#addPersonBtn");
+  if(addBtn && !addBtn._bound){
+    addBtn._bound = true;
+    addBtn.addEventListener("click", ()=>{
+      const name = root.querySelector("#newPersonName").value.trim();
+      const phone = root.querySelector("#newPersonPhone").value.trim();
+      const email = root.querySelector("#newPersonEmail").value.trim();
+      if(!name){ toast("Add a name first"); return; }
+      roster.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), name, phone, email });
+      saveRoster(); toast("Added to roster"); closeModal();
+    });
+  }
+  const selAllBtn = root.querySelector("#selectAllRosterBtn");
+  if(selAllBtn && !selAllBtn._bound){
+    selAllBtn._bound = true;
+    selAllBtn.addEventListener("click", ()=>{ roster.forEach(p=>state.selectedRoster.add(p.id)); renderShell(); });
+  }
+  const clearSelBtn = root.querySelector("#clearRosterSelBtn");
+  if(clearSelBtn && !clearSelBtn._bound){
+    clearSelBtn._bound = true;
+    clearSelBtn.addEventListener("click", ()=>{ state.selectedRoster.clear(); renderShell(); });
+  }
+  const resetShareBtn = root.querySelector("#resetShareTextBtn");
+  if(resetShareBtn && !resetShareBtn._bound){
+    resetShareBtn._bound = true;
+    resetShareBtn.addEventListener("click", ()=>{ state.shareDraft = defaultShareText(); renderShell(); });
+  }
+  const shareTA = root.querySelector("#shareTextArea");
+  if(shareTA && !shareTA._shareBound){
+    shareTA._shareBound = true;
+    shareTA.addEventListener("input", ()=>{
+      state.shareDraft = shareTA.value;
+      const selPeople = roster.filter(p=>state.selectedRoster.has(p.id));
+      const textNums = selPeople.filter(p=>p.phone).map(p=>p.phone).join(",");
+      const emails = selPeople.filter(p=>p.email).map(p=>p.email).join(",");
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const smsLink = root.querySelector("#textSelectedLink");
+      const mailLink = root.querySelector("#emailSelectedLink");
+      if(smsLink) smsLink.href = "sms:"+encodeURIComponent(textNums)+(isIOS?"&":"?")+"body="+encodeURIComponent(shareTA.value);
+      if(mailLink) mailLink.href = "mailto:?bcc="+encodeURIComponent(emails)+"&subject="+encodeURIComponent("Rooted in the Word")+"&body="+encodeURIComponent(shareTA.value);
+    });
+  }
+
+  const addEventBtn = root.querySelector("#addEventBtn");
+  if(addEventBtn && !addEventBtn._bound){
+    addEventBtn._bound = true;
+    addEventBtn.addEventListener("click", ()=>{
+      const title = root.querySelector("#newEventTitle").value.trim();
+      const date = root.querySelector("#newEventDate").value;
+      const time = root.querySelector("#newEventTime").value;
+      const location = root.querySelector("#newEventLocation").value.trim();
+      const notes = root.querySelector("#newEventNotes").value.trim();
+      if(!title || !date){ toast("Add a title and date first"); return; }
+      events.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), title, date, time, location, notes, attendance:{} });
+      saveEvents(); toast("Meeting scheduled"); renderShell();
+    });
+  }
+}
+
+function rerenderContext(schedDay){
+  if(state.viewingDay!==null){
+    const body = document.getElementById("dayModalBody");
+    if(body){ body.innerHTML = renderDayCard(state.viewingDay, {suppressScheduleNote:true}); bindDynamicEvents(body); }
+  }
+  renderShell();
+}
+function rerenderEventModal(){
+  const body = document.getElementById("eventModalBody");
+  if(body && state.viewingEventId){ body.innerHTML = renderEventDetail(state.viewingEventId); bindDynamicEvents(body); }
+}
+function openDateEventsModal(dateKey){
+  const dayEvents = events.filter(ev=>ev.date===dateKey);
+  const root = document.getElementById("modalRoot");
+  const d = parseYMD(dateKey);
+  root.innerHTML = `<div class="modal-scrim" id="scrim">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <h3>${niceDate(d)}</h3>
+        <button class="icon-btn" id="closeDatePicker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        ${dayEvents.map(ev=>`<div class="plan-row" data-act="openevent" data-id="${ev.id}">
+          <div class="pd-num"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></div>
+          <div class="pd-body"><div class="pd-date">${ev.time?niceTime(ev.time):"All day"}</div><div class="pd-refs">${escapeHtml(ev.title)}</div></div>
+        </div>`).join("")}
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("closeDatePicker").onclick = closeModal;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+  bindDynamicEvents(root);
+}
+function renderTodayPinned(n){
+  state.tab = "today"; state.viewingDay = null;
+  renderShell();
+  const view = document.getElementById("view");
+  view.innerHTML = renderDayCard(n);
+  bindDynamicEvents(view);
+}
+
+function bindSettingsEvents(root){
+  const saveKeyBtn = root.querySelector("#saveKeyBtn");
+  if(saveKeyBtn && !saveKeyBtn._bound){
+    saveKeyBtn._bound = true;
+    saveKeyBtn.addEventListener("click", ()=>{
+      settings.esvKey = root.querySelector("#esvKeyInput").value.trim();
+      saveSettings(); toast("API key saved");
+    });
+  }
+  const testKeyBtn = root.querySelector("#testKeyBtn");
+  if(testKeyBtn && !testKeyBtn._bound){
+    testKeyBtn._bound = true;
+    testKeyBtn.addEventListener("click", async ()=>{
+      const status = root.querySelector("#keyStatus");
+      const keyVal = root.querySelector("#esvKeyInput").value.trim();
+      status.textContent = "Testing…"; status.className="key-status";
+      try{
+        const res = await fetch("https://api.esv.org/v3/passage/text/?q=John+3:16", { headers:{ "Authorization":"Token "+keyVal } });
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        const data = await res.json();
+        if(data.passages && data.passages[0]){
+          status.textContent = "Connected — API key works."; status.className="key-status ok";
+          settings.esvKey = keyVal; saveSettings();
+        } else throw new Error("Unexpected response");
+      }catch(e){ status.textContent = "Couldn't connect: "+e.message; status.className="key-status err"; }
+    });
+  }
+  const saveStartBtn = root.querySelector("#saveStartBtn");
+  if(saveStartBtn && !saveStartBtn._bound){
+    saveStartBtn._bound = true;
+    saveStartBtn.addEventListener("click", ()=>{
+      const v = root.querySelector("#startDateInput").value;
+      if(!v) return;
+      startDate = v; LS.set(K.start, startDate);
+      toast("Start date updated"); renderShell();
+    });
+  }
+  const restartBtn = root.querySelector("#restartBtn");
+  if(restartBtn && !restartBtn._bound){
+    restartBtn._bound = true;
+    restartBtn.addEventListener("click", ()=>{
+      if(confirm("This clears every checkmark and note but keeps your start date. Continue?")){
+        progress = {}; saveProgress(); toast("Plan restarted"); renderShell();
+      }
+    });
+  }
+  const cancelPlanBtn = root.querySelector("#cancelPlanBtn");
+  if(cancelPlanBtn && !cancelPlanBtn._bound){
+    cancelPlanBtn._bound = true;
+    cancelPlanBtn.addEventListener("click", ()=>{
+      if(confirm("This stops the plan and erases your start date and all progress. Export a backup first if you want to keep it. Continue?")){
+        startDate = null; progress = {};
+        localStorage.removeItem(K.start); saveProgress();
+        renderShell();
+      }
+    });
+  }
+  const exportBtn = root.querySelector("#exportBtn");
+  if(exportBtn && !exportBtn._bound){
+    exportBtn._bound = true;
+    exportBtn.addEventListener("click", ()=>{
+      const blob = new Blob([JSON.stringify({startDate,progress,settings,highlights:phl,roster,events}, null, 2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "rooted-in-the-word-backup-"+fmtYMD(new Date())+".json";
+      a.click();
+      toast("Backup downloaded");
+    });
+  }
+  const importInput = root.querySelector("#importInput");
+  if(importInput && !importInput._bound){
+    importInput._bound = true;
+    importInput.addEventListener("change", (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const data = JSON.parse(reader.result);
+          if(data.startDate) { startDate = data.startDate; LS.set(K.start, startDate); }
+          if(data.progress) { progress = data.progress; saveProgress(); }
+          if(data.settings) { settings = Object.assign(settings, data.settings); saveSettings(); }
+          if(data.highlights) { phl = data.highlights; saveHl(); }
+          if(data.roster) { roster = data.roster; saveRoster(); }
+          if(data.events) { events = data.events; saveEvents(); }
+          applyTheme(); toast("Backup restored"); renderShell();
+        }catch(err){ toast("Couldn't read that file"); }
+      };
+      reader.readAsText(file);
+    });
+  }
+  const exportContactsBtn = root.querySelector("#exportContactsBtn");
+  if(exportContactsBtn && !exportContactsBtn._bound){
+    exportContactsBtn._bound = true;
+    exportContactsBtn.addEventListener("click", ()=>{
+      if(!roster.length){ toast("Your roster is empty"); return; }
+      const data = roster.map(p=>({name:p.name, phone:p.phone||"", email:p.email||""}));
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "rooted-in-the-word-contacts-"+fmtYMD(new Date())+".json";
+      a.click();
+      toast("Contacts exported");
+    });
+  }
+  const importContactsInput = root.querySelector("#importContactsInput");
+  if(importContactsInput && !importContactsInput._bound){
+    importContactsInput._bound = true;
+    importContactsInput.addEventListener("change", (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const data = JSON.parse(reader.result);
+          const arr = Array.isArray(data) ? data : (Array.isArray(data.roster) ? data.roster : null);
+          if(!arr) throw new Error("no contacts found");
+          let added = 0;
+          arr.forEach((p,i)=>{
+            if(!p || !p.name) return;
+            const phone = p.phone||"", email = p.email||"";
+            const dup = roster.some(r=>r.name===p.name && (r.phone||"")===phone && (r.email||"")===email);
+            if(dup) return;
+            roster.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7)+i, name:p.name, phone, email });
+            added++;
+          });
+          saveRoster();
+          toast(added ? (added+" contact"+(added===1?"":"s")+" imported") : "No new contacts to add");
+          renderShell();
+        }catch(err){ toast("Couldn't read that file"); }
+      };
+      reader.readAsText(file);
+    });
+  }
+  const resetAllBtn = root.querySelector("#resetAllBtn");
+  if(resetAllBtn && !resetAllBtn._bound){
+    resetAllBtn._bound = true;
+    resetAllBtn.addEventListener("click", ()=>{
+      if(confirm("This permanently erases all app data on this device. Continue?")){
+        Object.values(K).forEach(k=>localStorage.removeItem(k));
+        startDate=null; progress={}; settings={theme:"system",fontSize:18,fontFamily:"serif",esvKey:"",bibleVersion:"esv",pace:"1yr"}; phl={}; roster=[]; events=[]; state.selectedRoster=new Set();
+        applyTheme(); renderShell();
+      }
+    });
+  }
+}
+
+(function initOnboarding(){
+  const paceButtons = document.querySelectorAll("#obPaceChoice button");
+  let obPace = "1yr";
+  paceButtons.forEach(b=>{
+    b.addEventListener("click", ()=>{
+      obPace = b.dataset.pace;
+      paceButtons.forEach(x=>x.classList.remove("sel")); b.classList.add("sel");
+      document.getElementById("obDayMax").textContent = "of "+(obPace==="2yr"?730:365)+" — we'll back‑date your start.";
+      document.getElementById("obDayNum").max = obPace==="2yr" ? 730 : 365;
+    });
+  });
+
+  const dateBtn = document.getElementById("obChoiceDate");
+  const dayBtn = document.getElementById("obChoiceDay");
+  const datePanel = document.getElementById("obDatePanel");
+  const dayPanel = document.getElementById("obDayPanel");
+  const dateInput = document.getElementById("obStartDate");
+  dateInput.value = fmtYMD(new Date());
+  let mode = "date";
+  dateBtn.addEventListener("click", ()=>{ mode="date"; dateBtn.classList.add("sel"); dayBtn.classList.remove("sel"); datePanel.classList.remove("hidden"); dayPanel.classList.add("hidden"); });
+  dayBtn.addEventListener("click", ()=>{ mode="day"; dayBtn.classList.add("sel"); dateBtn.classList.remove("sel"); dayPanel.classList.remove("hidden"); datePanel.classList.add("hidden"); });
+
+  document.getElementById("obStartBtn").addEventListener("click", ()=>{
+    settings.pace = obPace; saveSettings();
+    const maxDays = obPace==="2yr" ? 730 : 365;
+    if(mode==="date"){
+      startDate = dateInput.value || fmtYMD(new Date());
+    } else {
+      const dnum = Math.max(1, Math.min(maxDays, parseInt(document.getElementById("obDayNum").value,10)||1));
+      startDate = fmtYMD(addDays(new Date(), -(dnum-1)));
+    }
+    LS.set(K.start, startDate);
+    switchToApp();
+  });
+  document.getElementById("obNotNowBtn").addEventListener("click", switchToApp);
+})();
+
+document.querySelectorAll("nav.tabbar button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    state.tab = btn.dataset.tab;
+    state.viewingDay = null;
+    renderShell();
+  });
+});
+
+document.getElementById("splashBtn").textContent = startDate ? "Continue" : "Begin the Plan";
+document.getElementById("splashExploreBtn").classList.toggle("hidden", !!startDate);
+document.getElementById("splashBtn").addEventListener("click", ()=>{
+  if(startDate){ switchToApp(); } else { switchToOnboarding(); }
+});
+document.getElementById("splashExploreBtn").addEventListener("click", switchToApp);
+</script>
+</body>
+</html>
