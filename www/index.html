@@ -343,6 +343,13 @@ html[data-theme="dark"] .theme-opt button.sel, html[data-theme="dark"] .font-opt
 html[data-theme="dark"] #readerText .verse.hl{background:rgba(217,174,85,.32);}
 html[data-theme="dark"] #readerText .verse.hl:hover{background:rgba(217,174,85,.44);}
 #readerText .vnum{font-size:.68em;color:var(--gold);font-weight:700;margin-right:.15em;vertical-align:super;}
+#readerText .xref-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:0 2px;border:none;border-radius:7px;background:var(--surface-2);color:var(--gold);vertical-align:middle;padding:0;flex-shrink:0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+#readerText .xref-btn:active{transform:scale(.9);}
+#readerText .xref-btn svg{width:11px;height:11px;pointer-events:none;user-select:none;}
+.xref-row{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:12px 13px;margin-bottom:7px;font-size:14px;font-weight:700;color:var(--ink);}
+.xref-row:active{transform:translateY(1px);}
+.xref-row .xr-votes{font-size:11px;font-weight:600;color:var(--ink-faint);white-space:nowrap;}
+.xref-hint{font-size:11.5px;color:var(--ink-faint);margin-bottom:4px;}
 .reader-status{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:14px;}
 .reader-status svg{width:30px;height:30px;color:var(--ink-faint);margin-bottom:10px;}
 .copyright-note{font-size:11px;color:var(--ink-faint);border-top:1px solid var(--border);margin-top:26px;padding-top:14px;line-height:1.6;}
@@ -451,6 +458,7 @@ html[data-theme="dark"] #readerText .verse.hl:hover{background:rgba(217,174,85,.
 </div>
 
 <div id="modalRoot"></div>
+<div id="xrefPanelRoot"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1734,7 +1742,7 @@ function openDayModal(n){
 function closeModal(){
   state.viewingDay=null; state.viewingEventId=null; state.editingEventId=null; state.messageModalOpen=false;
   state.eventDetailMode=null; state.createInvitePickerOpen=false;
-  document.getElementById("modalRoot").innerHTML=""; renderShell();
+  document.getElementById("modalRoot").innerHTML=""; closeXrefPanel(); renderShell();
 }
 
 function readingListForDay(day){
@@ -1743,6 +1751,7 @@ function readingListForDay(day){
 }
 
 function openReader(day, ref){
+  closeXrefPanel();
   const root = document.getElementById("modalRoot");
   const versionOptions = VERSION_ORDER.map(c=>`<option value="${c}" ${settings.bibleVersion===c?'selected':''}>${VERSIONS[c].label}</option>`).join("");
 
@@ -1775,7 +1784,8 @@ function openReader(day, ref){
         <button class="btn sm ghost" id="clearHlBtn">Clear highlights</button>
       </div>
       <div class="reader-body">
-        <div style="font-size:11.5px;color:var(--ink-faint);margin-bottom:10px;">Tap any verse to highlight it — tap again to remove.</div>
+        <div class="xref-hint">Tap any verse to highlight it — tap again to remove.</div>
+        <div class="xref-hint" style="margin-bottom:10px;">See a <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;"><path d="M9 15l6-6M10 6l1-1a3.5 3.5 0 0 1 5 5l-1 1M14 18l-1 1a3.5 3.5 0 0 1-5-5l1-1"/></svg> next to a verse? Tap it for cross references.</div>
         <div id="readerText" class="${settings.fontFamily==='sans'?'f-sans':'f-serif'}" style="font-size:${settings.fontSize}px;"><div class="reader-status" id="readerStatus"><span>Loading…</span></div></div>
         <div class="copyright-note" id="readerCopyright"></div>
         ${hasNav?`<div class="reader-bottom-nav">
@@ -1845,6 +1855,7 @@ async function loadPassage(ref){
   const cr = document.getElementById("readerCopyright");
   if(!el) return;
   const version = settings.bibleVersion;
+  state.readerRef = ref; state.readerVersion = version;
   const v = VERSIONS[version];
   if(cr) cr.innerHTML = v.requiresKey
     ? `${escapeHtml(v.copyright)} <a href="${v.link}" target="_blank" rel="noopener">www.esv.org</a>`
@@ -1858,13 +1869,15 @@ async function loadPassage(ref){
     return;
   }
   const memKey = version+"::"+ref;
-  if(sessionPassageCache[memKey]){ renderVersesFromMemory(ref); return; }
+  if(sessionPassageCache[memKey]){ renderVersesFromMemory(ref); loadXrefsAndDecorate(ref, version); return; }
 
   el.innerHTML = `<div class="reader-status"><span>Loading ${escapeHtml(ref)} (${v.label})…</span></div>`;
   try{
     const verses = version==="esv" ? await fetchESVVerses(ref) : await fetchBibleApiVerses(ref, version);
+    attachChapterVerse(ref, verses);
     sessionPassageCache[memKey] = verses;
     renderVersesFromMemory(ref);
+    loadXrefsAndDecorate(ref, version);
   }catch(err){
     el.innerHTML = `<div class="reader-status">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
@@ -1882,9 +1895,112 @@ function renderVersesFromMemory(ref){
   if(!verses){ loadPassage(ref); return; }
   const hlKey = version+"::"+ref;
   const hlSet = new Set(phl[hlKey]||[]);
-  el.innerHTML = "<p>"+verses.map((v,idx)=>
-    `<span class="verse ${hlSet.has(idx)?'hl':''}" data-idx="${idx}"><sup class="vnum">${v.label}</sup>${escapeHtml(v.text)} </span>`
-  ).join("")+"</p>";
+  const xslug = xrefBookSlug(ref);
+  const xdata = xslug ? resolvedXrefBooks[xslug] : null;
+  el.innerHTML = "<p>"+verses.map((v,idx)=>{
+    const list = (xdata && v.cv) ? xdata[v.cv] : null;
+    const xrefBtn = (list && list.length) ? `<button class="xref-btn" data-idx="${idx}" title="${list.length} cross reference${list.length===1?'':'s'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 15l6-6M10 6l1-1a3.5 3.5 0 0 1 5 5l-1 1M14 18l-1 1a3.5 3.5 0 0 1-5-5l1-1"/></svg></button>` : "";
+    return `<span class="verse ${hlSet.has(idx)?'hl':''}" data-idx="${idx}"><sup class="vnum">${v.label}</sup>${escapeHtml(v.text)}${xrefBtn} </span>`;
+  }).join("")+"</p>";
+}
+
+// ---- Cross references (Treasury of Scripture Knowledge, via openbible.info CC-BY data) ----
+const sessionXrefCache = {};   // bookSlug -> in-flight/resolved fetch promise
+const resolvedXrefBooks = {};  // bookSlug -> resolved data object, once loaded
+
+function xrefBookSlug(ref){
+  const m = ref.match(/^((?:[1-3]\s)?[A-Za-z]+)/);
+  if(!m) return null;
+  return m[1].toLowerCase().replace(/\s+/g,"");
+}
+function extractVerseNum(label){
+  if(!label) return 0;
+  const parts = String(label).split(":");
+  return parseInt(parts[parts.length-1], 10) || 0;
+}
+// Works out a "chapter:verse" key for every rendered verse so it can be looked up in the
+// cross-reference data, regardless of whether the source (ESV vs bible-api) labeled it with
+// just a verse number or a full "chapter:verse". Covers every reference shape used in PLAN:
+// a single chapter ("Gen 12"), a chapter range ("Gen 9-10"), or a verse range ("Ps 78:1-39").
+function attachChapterVerse(ref, verses){
+  const m = ref.match(/^(?:[1-3]\s)?[A-Za-z]+\s+(.+)$/);
+  const rest = m ? m[1] : "";
+  const rangeMatch = rest.match(/^(\d+)-(\d+)$/);
+  const cvMatch = rest.match(/^(\d+):(\d+)(?:-(\d+))?$/);
+  const singleMatch = rest.match(/^(\d+)$/);
+  if(rangeMatch){
+    let cur = parseInt(rangeMatch[1],10);
+    const end = parseInt(rangeMatch[2],10);
+    let prevNum = -1;
+    verses.forEach(v=>{
+      const vn = extractVerseNum(v.label);
+      if(prevNum!==-1 && vn<=prevNum && cur<end) cur++;
+      v.cv = cur+":"+vn;
+      prevNum = vn;
+    });
+  } else if(cvMatch){
+    const ch = parseInt(cvMatch[1],10);
+    verses.forEach(v=>{ v.cv = ch+":"+extractVerseNum(v.label); });
+  } else if(singleMatch){
+    const ch = parseInt(singleMatch[1],10);
+    verses.forEach(v=>{ v.cv = ch+":"+extractVerseNum(v.label); });
+  } else {
+    verses.forEach(v=>{ v.cv = (v.label && String(v.label).includes(":")) ? v.label : null; });
+  }
+}
+function ensureXrefBook(slug){
+  if(resolvedXrefBooks[slug]) return Promise.resolve(resolvedXrefBooks[slug]);
+  if(!sessionXrefCache[slug]){
+    sessionXrefCache[slug] = fetch("data/xrefs/"+slug+".json")
+      .then(r=> r.ok ? r.json() : {})
+      .catch(()=>({}));
+  }
+  return sessionXrefCache[slug].then(data=>{ resolvedXrefBooks[slug]=data; return data; });
+}
+function loadXrefsAndDecorate(ref, version){
+  const slug = xrefBookSlug(ref);
+  if(!slug) return;
+  ensureXrefBook(slug).then(()=>{
+    // guard against a stale response landing after the person navigated elsewhere
+    if(state.readerRef===ref && state.readerVersion===version && document.getElementById("readerText")){
+      renderVersesFromMemory(ref);
+    }
+  });
+}
+function fullVerseLabel(ref, cv){
+  const m = ref.match(/^((?:[1-3]\s)?[A-Za-z]+)/);
+  return (m?m[1]:"") + " " + cv;
+}
+function openXrefPanel(fromLabel, list){
+  const root = document.getElementById("xrefPanelRoot");
+  const rows = list.map(([r,votes])=>
+    `<button class="xref-row" data-ref="${escapeHtml(r)}"><span>${escapeHtml(r)}</span></button>`
+  ).join("");
+  root.innerHTML = `<div class="modal-scrim" id="xrefScrim" style="z-index:60;">
+    <div class="modal-sheet" style="max-width:480px;">
+      <div class="modal-head">
+        <h3>Cross References — ${escapeHtml(fromLabel)}</h3>
+        <button class="icon-btn" id="closeXrefPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="xref-hint" style="margin-bottom:12px;">From the Treasury of Scripture Knowledge (public domain), via openbible.info cross-reference data. Tap a reference to read it.</div>
+        ${rows}
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("xrefScrim").addEventListener("click",(e)=>{ if(e.target.id==="xrefScrim") closeXrefPanel(); });
+  document.getElementById("closeXrefPanel").onclick = closeXrefPanel;
+  root.querySelectorAll(".xref-row").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const r = btn.dataset.ref;
+      closeXrefPanel();
+      openReader(0, r);
+    });
+  });
+}
+function closeXrefPanel(){
+  const root = document.getElementById("xrefPanelRoot");
+  if(root) root.innerHTML = "";
 }
 async function fetchESVVerses(ref){
   const q = toFullRef(ref);
@@ -1925,6 +2041,21 @@ function setupVerseTapToHighlight(ref){
   if(container._tapBound) return;
   container._tapBound = true;
   container.addEventListener("click", (e)=>{
+    // Cross-reference icon: handled entirely separately, and returns before
+    // any highlight logic runs, so tapping it can never toggle a highlight.
+    const xbtn = e.target.closest(".xref-btn");
+    if(xbtn){
+      e.stopPropagation();
+      const idx = parseInt(xbtn.dataset.idx, 10);
+      const verses = sessionPassageCache[settings.bibleVersion+"::"+ref];
+      const v = verses && verses[idx];
+      const slug = xrefBookSlug(ref);
+      const xdata = slug ? resolvedXrefBooks[slug] : null;
+      const list = (v && v.cv && xdata) ? xdata[v.cv] : null;
+      if(v && v.cv && list && list.length) openXrefPanel(fullVerseLabel(ref, v.cv), list);
+      return;
+    }
+    // --- Highlight tap-to-toggle (unchanged) ---
     const v = e.target.closest(".verse");
     if(!v) return;
     const idx = parseInt(v.dataset.idx, 10);
@@ -1934,6 +2065,23 @@ function setupVerseTapToHighlight(ref){
     phl[key] = Array.from(cur).sort((a,b)=>a-b);
     saveHl();
     renderVersesFromMemory(ref);
+  });
+  // Defense-in-depth alongside the CSS user-select:none on .xref-btn: if a person
+  // selects across a cross-reference icon and copies, strip the icon out of the
+  // actual clipboard payload so it never ends up in pasted verse text.
+  container.addEventListener("copy", (e)=>{
+    const sel = window.getSelection();
+    if(!sel || sel.rangeCount===0 || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    if(!container.contains(range.commonAncestorContainer)) return;
+    const frag = range.cloneContents();
+    const wrapper = document.createElement("div");
+    wrapper.appendChild(frag);
+    wrapper.querySelectorAll(".xref-btn").forEach(b=>b.remove());
+    if(!e.clipboardData) return;
+    e.clipboardData.setData("text/plain", wrapper.textContent.replace(/\s+/g," ").trim());
+    e.clipboardData.setData("text/html", wrapper.innerHTML);
+    e.preventDefault();
   });
 }
 
