@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy — Rooted in the Word</title>
+<link rel="icon" href="icons/favicon.ico" sizes="any">
+<style>
+  :root{
+    --bg:#F6F1E3; --surface:#FFFFFF; --ink:#242219; --ink-soft:#655F4E;
+    --border:#E3D9BE; --gold:#9C7423; --ribbon:#7C2B3F;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif;
+    line-height:1.65;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:48px 22px 80px;}
+  .mark{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--ribbon),var(--gold));margin-bottom:18px;}
+  h1{font-size:26px;margin:0 0 6px;}
+  .updated{color:var(--ink-soft);font-size:13px;margin-bottom:32px;}
+  h2{font-size:17px;margin:34px 0 8px;}
+  p, li{color:var(--ink);font-size:15px;}
+  ul{padding-left:20px;}
+  a{color:var(--gold);}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin:18px 0;}
+  .back{display:inline-block;margin-top:36px;font-size:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mark"></div>
+  <h1>Privacy</h1>
+  <div class="updated">Rooted in the Word — Reading Journal</div>
+
+  <div class="card">
+    <strong>Short version:</strong> this app has no server, no account, and no analytics.
+    Everything you enter — reading progress, notes, highlights, your roster, meetings —
+    is stored only in your own browser, on your own device.
+  </div>
+
+  <h2>What's stored, and where</h2>
+  <p>All of the following is saved using your browser's local storage, on your device only. It is never transmitted anywhere by this app:</p>
+  <ul>
+    <li>Your reading plan start date, pace, and checklist progress</li>
+    <li>Notes you write for each day's reading</li>
+    <li>Verses you highlight (only the verse position is stored — never the Bible text itself)</li>
+    <li>Your group roster (names, phone numbers, emails you add)</li>
+    <li>Meetings you schedule and attendance you record</li>
+    <li>Your appearance, font, and Bible-version preferences, and your ESV API key if you add one</li>
+  </ul>
+  <p>Clearing your browser's site data, using a different browser, or switching devices will remove or not include this information, since nothing is backed up anywhere automatically. Use the Export feature in Settings to make your own backup file whenever you'd like one.</p>
+
+  <h2>Requests that leave your device</h2>
+  <p>Two things this app does reach out to the network for, both triggered only when you tap "read in app":</p>
+  <ul>
+    <li><strong>api.esv.org</strong> — if you've added your own free ESV API key, passage text is fetched directly from Crossway's ESV API using that key. This app does not have or use its own key; each person supplies their own. Passage text is kept in memory only while the reader is open and is not saved to your device between visits.</li>
+    <li><strong>bible-api.com</strong> — used for the free public-domain translations (KJV, WEB, ASV, BBE), the same way and with the same no-storage handling.</li>
+  </ul>
+  <p>Neither of those requests includes your name, notes, roster, or any other personal information — only the Bible reference you asked to read.</p>
+
+  <h2>Sharing features</h2>
+  <p>The Message, Share, and Invite buttons hand off to your device's own Messages or Mail app (or its native share sheet) with a pre-filled message. Nothing is sent by this app itself — you choose whether to actually send it, and it goes directly from your device to whoever you pick, the same as writing that text yourself.</p>
+
+  <h2>No ads, no tracking, no cookies</h2>
+  <p>This app doesn't use cookies, analytics, or advertising of any kind, and doesn't share data with any third party other than the two Bible-text services above, only when you request a passage.</p>
+
+  <h2>If you're using a copy someone else hosts</h2>
+  <p>This app is open-source HTML/JavaScript that anyone can host (for example, on GitHub Pages). Whoever hosts the copy you're using doesn't receive your data either — it's a static file with no server-side component, so there's nothing for a host to collect even if they wanted to. If you have questions about a specific hosted copy, ask whoever shared the link with you.</p>
+
+  <h2>Questions</h2>
+  <p>Contact: <em>add your contact email here before publishing</em></p>
+
+  <a class="back" href="index.html">← Back to the app</a>
+</div>
+</body>
+</html>
