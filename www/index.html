@@ -1189,7 +1189,7 @@ function renderMessageView(){
   const emails = selPeople.filter(p=>p.email).map(p=>p.email).join(",");
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const smsHref = "sms:"+encodeURIComponent(textNums)+(isIOS?"&":"?")+"body="+encodeURIComponent(text);
-  const mailHref = "mailto:?bcc="+encodeURIComponent(emails)+"&subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(text);
+  const mailHref = "mailto:"+emails+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(text);
 
   return `
     <div class="field-label" style="margin-top:0;">To</div>
@@ -1543,7 +1543,7 @@ function renderEventInviteSection(ev, id){
   const emails = selPeople.filter(p=>p.email).map(p=>p.email).join(",");
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const smsHref = "sms:"+encodeURIComponent(textNums)+(isIOS?"&":"?")+"body="+encodeURIComponent(inviteText);
-  const mailHref = "mailto:?bcc="+encodeURIComponent(emails)+"&subject="+encodeURIComponent(ev.title)+"&body="+encodeURIComponent(inviteText);
+  const mailHref = "mailto:"+emails+"?subject="+encodeURIComponent(ev.title)+"&body="+encodeURIComponent(inviteText);
 
   const inviteRows = roster.length===0
     ? `<div class="empty-state" style="padding:16px;"><p>Add people to your roster first to invite them.</p></div>`
@@ -2687,7 +2687,7 @@ function bindGroupEvents(root){
       const emails = selPeople.filter(p=>p.email).map(p=>p.email).join(",");
       const bodyVal = (root.querySelector("#shareTextArea")||{}).value ?? (state.shareDraft!==null?state.shareDraft:defaultShareText());
       const mailLink = root.querySelector("#emailSelectedLink");
-      if(mailLink) mailLink.href = "mailto:?bcc="+encodeURIComponent(emails)+"&subject="+encodeURIComponent(msgSubjectInput.value)+"&body="+encodeURIComponent(bodyVal);
+      if(mailLink) mailLink.href = "mailto:"+emails+"?subject="+encodeURIComponent(msgSubjectInput.value)+"&body="+encodeURIComponent(bodyVal);
     });
   }
   const resetShareBtn = root.querySelector("#resetShareTextBtn");
@@ -2708,7 +2708,7 @@ function bindGroupEvents(root){
       const smsLink = root.querySelector("#textSelectedLink");
       const mailLink = root.querySelector("#emailSelectedLink");
       if(smsLink) smsLink.href = "sms:"+encodeURIComponent(textNums)+(isIOS?"&":"?")+"body="+encodeURIComponent(shareTA.value);
-      if(mailLink) mailLink.href = "mailto:?bcc="+encodeURIComponent(emails)+"&subject="+encodeURIComponent(subjVal)+"&body="+encodeURIComponent(shareTA.value);
+      if(mailLink) mailLink.href = "mailto:"+emails+"?subject="+encodeURIComponent(subjVal)+"&body="+encodeURIComponent(shareTA.value);
     });
   }
   wireAttachShareBtn(root);
