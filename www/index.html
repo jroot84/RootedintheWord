@@ -123,16 +123,17 @@ a{color:var(--gold);}
 #appShell{max-width:760px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding-bottom:84px;}
 
 .ribbon-wrap{position:sticky;top:0;z-index:20;background:var(--bg);padding:0 18px;}
-.ribbon-track{position:relative;height:10px;background:var(--surface-3);border-radius:6px;overflow:visible;margin-top:8px;}
+.ribbon-track{position:relative;height:10px;background:var(--surface-3);border-radius:6px;overflow:visible;margin-top:6px;}
 .ribbon-fill{position:relative;height:100%;border-radius:6px 0 0 6px;background:linear-gradient(90deg,var(--ribbon),var(--gold-2));transition:width .4s ease;min-width:10px;}
 .ribbon-fill::after{content:"";position:absolute;right:-8px;top:0;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--gold-2);}
-.ribbon-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-faint);margin:6px 2px 2px;letter-spacing:.02em;}
+.ribbon-eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin:10px 2px 0;}
 
 header.top{padding:14px 18px 4px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
 header.top .brand{display:flex;flex-direction:column;line-height:1.15;}
 header.top .brand b{font-family:var(--serif-display);font-size:19px;font-weight:600;letter-spacing:.01em;}
 header.top .brand span{font-size:12px;color:var(--ink-soft);}
-.streak-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:var(--shadow-sm);white-space:nowrap;}
+.streak-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:var(--shadow-sm);white-space:nowrap;cursor:pointer;}
+.streak-chip:active{transform:translateY(1px);}
 .streak-chip svg{width:14px;height:14px;}
 
 main#view{flex:1;padding:6px 18px 24px;}
@@ -190,6 +191,30 @@ html[data-theme="dark"] .btn.primary{background:var(--gold);color:#1D1C24;border
 .hero .day-date{color:var(--ink-soft);font-size:13.5px;margin-bottom:14px;}
 .schedule-note{font-size:12.5px;background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:10px;padding:8px 10px;color:var(--ink-soft);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
 .schedule-note button{flex-shrink:0;}
+.today-status-line{font-size:12.5px;color:var(--ink-faint);text-align:center;padding:8px 4px 2px;}
+
+.day-head{padding:4px 2px 2px;}
+.day-head .day-title{font-family:var(--serif-display);font-size:22px;margin:2px 0 8px;}
+.day-chip-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+.pill-chip{font-size:11.5px;font-weight:700;background:var(--surface-2);color:var(--ink-soft);padding:5px 10px;border-radius:999px;display:inline-flex;align-items:center;}
+.pill-link{border:none;background:none;font-size:12px;font-weight:700;color:var(--gold);padding:0;display:inline-flex;align-items:center;gap:3px;}
+.day-unscheduled-note{font-size:12px;color:var(--ink-faint);font-style:italic;}
+.day-progress{display:flex;gap:5px;margin:14px 2px 8px;}
+.day-progress span{flex:1;height:6px;border-radius:3px;background:var(--surface-3);}
+.day-progress span.done{background:var(--green);}
+.day-markall-row{display:flex;justify-content:flex-end;margin:0 0 2px;}
+.day-markall{background:transparent;border-color:transparent;color:var(--ink-faint);font-size:11.5px;font-weight:600;padding:4px 6px;}
+.day-markall.done{color:var(--green);}
+.reading-row{cursor:pointer;}
+.reading-row:active{background:var(--surface-2);}
+.reading-chevron{color:var(--ink-faint);flex-shrink:0;margin-top:8px;}
+.day-cmdbar{position:sticky;bottom:var(--tabbar-h,64px);background:var(--surface);border-top:1px solid var(--border);border-radius:16px 16px 0 0;margin:16px -18px -24px;padding:10px 18px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -8px 20px -16px rgba(0,0,0,.2);z-index:2;}
+.modal-sheet .day-cmdbar{bottom:0;margin:16px -16px -16px;padding:10px 16px 14px;}
+.day-cmdrow{display:flex;align-items:center;gap:8px;}
+.day-cmdrow .icon-btn{width:42px;height:42px;flex:0 0 auto;}
+.day-cmdrow .day-begin{flex:1;justify-content:center;padding:13px;font-size:14.5px;}
+.day-begin.done{background:var(--green);border-color:var(--green);}
+html[data-theme="dark"] .day-begin.done{color:#0F1220;}
 
 .reading-row{display:flex;align-items:flex-start;gap:12px;padding:12px 4px;border-top:1px solid var(--border);}
 .reading-row:first-of-type{border-top:none;}
@@ -356,9 +381,13 @@ html[data-theme="dark"] #readerText .verse.hl:hover{background:rgba(217,174,85,.
 .reader-status{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:14px;}
 .reader-status svg{width:30px;height:30px;color:var(--ink-faint);margin-bottom:10px;}
 .copyright-note{font-size:11px;color:var(--ink-faint);border-top:1px solid var(--border);margin-top:26px;padding-top:14px;line-height:1.6;}
-.reader-bottom-nav{display:flex;gap:10px;margin-top:20px;}
-.reader-bottom-nav .btn{flex:1;justify-content:center;padding:13px;font-size:14px;}
+.reader-bottom-nav{display:flex;align-items:stretch;gap:8px;margin-top:20px;}
+.reader-bottom-nav .btn{justify-content:center;padding:13px;font-size:14px;}
 .reader-bottom-nav .btn:disabled{opacity:.35;}
+.reader-bottom-nav .navarrow{flex:0 0 auto;width:48px;padding:0;}
+.reader-bottom-nav .markcomplete{flex:1;gap:8px;}
+.reader-bottom-nav .markcomplete.done{background:var(--green);border-color:var(--green);color:#fff;}
+html[data-theme="dark"] .reader-bottom-nav .markcomplete.done{background:var(--green);border-color:var(--green);color:#0F1220;}
 .reader-version-select{border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);border-radius:9px;padding:6px 8px;font-size:12.5px;font-weight:600;}
 
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);z-index:90;opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none;}
@@ -430,8 +459,8 @@ html[data-theme="dark"] #readerText .verse.hl:hover{background:rgba(217,174,85,.
         <span id="streakVal">0</span>
       </div>
     </header>
+    <div class="ribbon-eyebrow" id="ribbonEyebrow">Day 1 of 365</div>
     <div class="ribbon-track"><div class="ribbon-fill" id="ribbonFill" style="width:2%"></div></div>
-    <div class="ribbon-label"><span id="ribbonLabelLeft">Day 1</span><span id="ribbonLabelRight">0% complete</span></div>
   </div>
 
   <main id="view"></main>
@@ -607,7 +636,7 @@ function scheduledDayToday(){
 function niceDate(d){ return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"}); }
 function niceDateShort(d){ return d.toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
 
-let state = { tab:"today", planMode:"list", viewingDay:null, calCursor:null, searchQuery:"",
+let state = { tab:"today", planMode:"list", viewingDay:null, todayDay:null, calCursor:null, searchQuery:"",
   planSearchQuery:"", browseBook:null, browseSearchQuery:"",
   selectedRoster:new Set(), editingRosterId:null, shareDraft:null, messageSubject:null,
   groupMode:"hub", recipientPickerOpen:false,
@@ -671,6 +700,12 @@ async function saveFile(filename, content, mime){
   return true;
 }
 
+function updateTabbarHeightVar(){
+  const bar = document.querySelector("nav.tabbar");
+  if(bar) document.documentElement.style.setProperty("--tabbar-h", bar.offsetHeight+"px");
+}
+window.addEventListener("resize", updateTabbarHeightVar);
+
 function toast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg; t.classList.add("show");
@@ -682,6 +717,7 @@ function switchToApp(){
   document.getElementById("splash").classList.add("hidden");
   document.getElementById("onboarding").classList.add("hidden");
   document.getElementById("appShell").classList.remove("hidden");
+  document.getElementById("streakChip").onclick = openStatsModal;
   renderShell();
 }
 function switchToOnboarding(){
@@ -691,13 +727,15 @@ function switchToOnboarding(){
 }
 
 function renderShell(){
+  updateTabbarHeightVar();
   const total = totalScheduleDays();
   const done = totalCompleteScheduleDays();
   const started = hasStarted();
   const pct = started ? Math.round((done/total)*100) : 0;
   document.getElementById("ribbonFill").style.width = (started ? Math.max(pct,2) : 0)+"%";
-  document.getElementById("ribbonLabelLeft").textContent = started ? ("Day "+Math.min(scheduledDayToday(),total)+" of "+total) : "Not started yet";
-  document.getElementById("ribbonLabelRight").textContent = started ? (pct+"% complete") : "Explore, then begin anytime";
+  document.getElementById("ribbonEyebrow").textContent = started
+    ? ("Day "+Math.min(scheduledDayToday(),total)+" of "+total+" · "+pct+"% complete")
+    : "Not started yet";
   document.getElementById("streakVal").textContent = started ? currentStreak() : 0;
 
   document.querySelectorAll("nav.tabbar button").forEach(b=>{ b.classList.toggle("active", b.dataset.tab===state.tab); });
@@ -725,73 +763,81 @@ function renderDayCard(n, opts){
   const refs = info.refIdx.map(i=>PLAN[info.planDay-1][i]);
   const e = getEntry(info.planDay);
   const d = dateForDay(n);
+  const doneCount = info.keys.filter(k=>e[k]).length;
+  const allDone = doneCount>=info.keys.length;
+
   const rows = refs.map((ref,i)=>{
     const key = info.keys[i];
     const done = e[key];
-    return `<div class="reading-row">
-      <button class="chk ${done?'done':''}" data-act="toggle" data-day="${info.planDay}" data-key="${key}" data-sched="${n}">
+    return `<div class="reading-row" data-act="read" data-day="${n}" data-ref="${escapeHtml(ref)}">
+      <button class="chk ${done?'done':''}" data-act="toggle" data-day="${info.planDay}" data-key="${key}" data-sched="${n}" onclick="event.stopPropagation();">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>
       </button>
       <div class="reading-main">
         <div class="reading-tag">${info.labels[i]}</div>
         <div class="reading-ref ${done?'done':''}">${escapeHtml(ref)}</div>
       </div>
-      <div class="reading-actions">
-        <button class="icon-btn" data-act="read" data-day="${n}" data-ref="${escapeHtml(ref)}" title="Read in app">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4c-2-1.3-5-2-8-2v16c3 0 6 .7 8 2 2-1.3 5-2 8-2V2c-3 0-6 .7-8 2Z"/><path d="M12 4v16"/></svg>
-        </button>
-      </div>
+      <svg class="reading-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
     </div>`;
   }).join("");
 
   const schedDay = scheduledDayToday();
-  let scheduleNote = "";
-  if(hasStarted() && !opts.suppressScheduleNote && n!==schedDay){
-    scheduleNote = `<div class="schedule-note"><span>Today's calendar date (${niceDateShort(new Date())}) is scheduled as <b>Day ${schedDay}</b>.</span>
-      <button class="btn sm" data-act="gotoday" data-day="${schedDay}">View Day ${schedDay}</button></div>`;
-  }
-  const allDone = info.keys.every(k=>e[k]);
+  const showCatchup = hasStarted() && !opts.suppressScheduleNote && n!==schedDay;
 
-  return `<div class="hero">
-    <div class="eyebrow">Day ${n} of ${total}${settings.pace==="2yr"?` · Plan Day ${info.planDay}`:""}</div>
-    <div class="day-title">${d ? niceDateShort(d) : `Day ${n}`}</div>
-    <div class="day-date">${d ? niceDate(d) : "Not yet scheduled — set a start date whenever you're ready"}</div>
-    ${scheduleNote}
-    ${rows}
-    <div class="day-footer">
-      <button class="btn primary" data-act="complete" data-day="${info.planDay}" data-sched="${n}">${allDone?'Marked complete ✓':'Mark all read'}</button>
-      <button class="icon-btn ${e.bookmark?'active':''}" data-act="bookmark" data-day="${info.planDay}" title="Bookmark this reading">
-        <svg viewBox="0 0 24 24" fill="${e.bookmark?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8"><path d="M6 3.5h12V21l-6-4-6 4V3.5Z"/></svg>
-      </button>
-      ${n>1?`<button class="icon-btn" data-act="nav" data-day="${n-1}" title="Previous day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>`:""}
-      <button class="icon-btn" data-act="nav" data-day="${Math.min(n+1,total)}" title="Next day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>
+  const beginLabel = allDone ? "Completed" : (doneCount===0 ? "Begin" : "Continue");
+
+  return `
+    <div class="day-head">
+      <div class="day-title">${d ? niceDate(d) : `Day ${n}`}</div>
+      <div class="day-chip-row">
+        <span class="pill-chip">Day ${n} of ${total}${settings.pace==="2yr"?` · Plan Day ${info.planDay}`:""}</span>
+        ${!d?`<span class="day-unscheduled-note">Not yet scheduled</span>`:""}
+        ${showCatchup?`<button class="pill-link" data-act="gotoday" data-day="${schedDay}">Today is Day ${schedDay} →</button>`:""}
+      </div>
     </div>
-    <div class="note-box">
-      <div class="note-label-row">
-        <label><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg> Notes for this reading</label>
-        <button class="icon-btn" data-act="opennotemodal" data-day="${info.planDay}" title="Open notes full-screen" style="width:28px;height:28px;">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+    <div class="day-progress">${info.keys.map(k=>`<span class="${e[k]?'done':''}"></span>`).join("")}</div>
+    <div class="day-markall-row">
+      <button class="btn day-markall ${allDone?'done':''}" data-act="complete" data-day="${info.planDay}" data-sched="${n}">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>
+        ${allDone?'Unmark all':'Mark all read'}
+      </button>
+    </div>
+    <div class="reading-list">${rows}</div>
+    <div class="day-cmdbar">
+      <div class="day-cmdrow">
+        <button class="icon-btn" data-act="nav" data-day="${n>1?n-1:1}" ${n<=1?'disabled':''} title="Previous day">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button class="icon-btn ${e.bookmark?'active':''}" data-act="bookmark" data-day="${info.planDay}" title="Bookmark this day">
+          <svg viewBox="0 0 24 24" fill="${e.bookmark?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8"><path d="M6 3.5h12V21l-6-4-6 4V3.5Z"/></svg>
+        </button>
+        <button class="btn primary day-begin ${allDone?'done':''}" data-act="begin" data-day="${n}">${beginLabel}</button>
+        <button class="icon-btn" data-act="opennotemodal" data-day="${info.planDay}" title="Notes for this day">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg>
+        </button>
+        <button class="icon-btn" data-act="nav" data-day="${Math.min(n+1,total)}" ${n>=total?'disabled':''} title="Next day">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
         </button>
       </div>
-      <textarea data-act="note" data-day="${info.planDay}" placeholder="What stood out to you? Questions, prayers, cross-references…">${escapeHtml(e.note)}</textarea>
     </div>
-  </div>`;
+  `;
 }
 
 function renderToday(){
-  const n = nextIncompleteScheduleDay();
-  const banner = hasStarted() ? "" : `<div class="schedule-note" style="margin-bottom:14px;">
-    <span>You're exploring — nothing's scheduled to a calendar yet. Anything you check off or note here is saved and will carry over once you begin.</span>
-    <button class="btn sm primary" data-act="beginplan">Begin the Plan</button>
-  </div>`;
+  if(state.todayDay==null) state.todayDay = nextIncompleteScheduleDay();
+  const n = state.todayDay;
+  let statusLine = "";
+  if(!hasStarted()){
+    statusLine = `<div class="today-status-line">You haven't started a plan yet.</div>`;
+  } else {
+    const sd = parseYMD(startDate);
+    if(daysBetween(sd, new Date())<0){
+      statusLine = `<div class="today-status-line">Your plan starts on ${niceDate(sd)}.</div>`;
+    }
+  }
   return `
-    ${banner}
+    ${statusLine}
     ${renderDayCard(n)}
-    <div class="stats-grid">
-      <div class="stat"><b>${totalCompleteScheduleDays()}</b><span>Days done</span></div>
-      <div class="stat"><b>${currentStreak()}</b><span>Streak</span></div>
-      <div class="stat"><b>${longestStreak()}</b><span>Best streak</span></div>
-    </div>
   `;
 }
 
@@ -1971,12 +2017,18 @@ function openReader(day, ref){
   const total = totalScheduleDays();
   const hasNav = day>0;
   const hasBack = state.readerStack.length>0;
-  let atStart = true, atEnd = true;
+  let atStart = true, atEnd = true, isDone = false, canMark = false;
   if(hasNav){
     const refs = readingListForDay(day);
     const idx = refs.indexOf(ref);
     atStart = day<=1 && idx<=0;
     atEnd = day>=total && idx>=refs.length-1;
+    if(idx>=0){
+      const info = scheduleDayInfo(day);
+      const e = getEntry(info.planDay);
+      isDone = !!e[info.keys[idx]];
+      canMark = true;
+    }
   }
 
   root.innerHTML = `<div class="modal-scrim" id="scrim">
@@ -2005,13 +2057,15 @@ function openReader(day, ref){
         <div id="readerText" class="${settings.fontFamily==='sans'?'f-sans':'f-serif'}" style="font-size:${settings.fontSize}px;"><div class="reader-status" id="readerStatus"><span>Loading…</span></div></div>
         <div class="copyright-note" id="readerCopyright"></div>
         ${hasNav?`<div class="reader-bottom-nav">
-          <button class="btn ${atStart?'':'primary'}" id="readerPrevBottom" ${atStart?'disabled':''}>
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>
-            Previous
+          <button class="btn navarrow" id="readerPrevBottom" ${atStart?'disabled':''} title="Previous reading">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>
           </button>
-          <button class="btn primary" id="readerNextBottom" ${atEnd?'disabled':''}>
-            Next
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
+          ${canMark?`<button class="btn primary markcomplete ${isDone?'done':''}" id="readerMarkComplete">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>
+            ${isDone?'Completed':'Mark Complete'}
+          </button>`:'<span style="flex:1"></span>'}
+          <button class="btn navarrow" id="readerNextBottom" ${atEnd?'disabled':''} title="Next reading">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>`:""}
       </div>
@@ -2055,6 +2109,41 @@ function openReader(day, ref){
     if(nextBtn) nextBtn.onclick = goNext;
     if(prevBtnBottom) prevBtnBottom.onclick = goPrev;
     if(nextBtnBottom) nextBtnBottom.onclick = goNext;
+
+    const markBtn = document.getElementById("readerMarkComplete");
+    if(markBtn) markBtn.onclick = ()=>{
+      const info = scheduleDayInfo(day);
+      const refs = readingListForDay(day);
+      const idx = refs.indexOf(ref);
+      if(idx<0) return;
+      const key = info.keys[idx];
+      const wasDone = !!getEntry(info.planDay)[key];
+      setEntry(info.planDay, {[key]: !wasDone});
+
+      if(wasDone){
+        // Un-marking — just refresh this same reading in place.
+        renderShell();
+        openReader(day, ref);
+        return;
+      }
+
+      // Newly marked complete — reflect it everywhere, then move on.
+      renderShell();
+      const nowAllDone = info.keys.every(k=>getEntry(info.planDay)[k]);
+      if(nowAllDone){
+        toast("Day complete!");
+        closeModal();
+      } else if(idx<refs.length-1){
+        state.readerStack = [];
+        openReader(day, refs[idx+1]);
+      } else if(day<total){
+        state.readerStack = [];
+        const nextRefs = readingListForDay(day+1);
+        openReader(day+1, nextRefs[0]);
+      } else {
+        closeModal();
+      }
+    };
   }
 
   loadPassage(ref);
@@ -2509,6 +2598,14 @@ function bindDynamicEvents(root){
         const patch = {}; info.keys.forEach(k=>patch[k]=true);
         setEntry(day, patch);
         renderShell();
+      } else if(act==="begin"){
+        const info = scheduleDayInfo(day);
+        const e = getEntry(info.planDay);
+        const refs = readingListForDay(day);
+        let idx = info.keys.findIndex(k=>!e[k]);
+        if(idx<0) idx = 0;
+        state.readerStack = [];
+        openReader(day, refs[idx]);
       } else if(act==="bookmark"){
         setEntry(day, {bookmark: !getEntry(day).bookmark});
         rerenderContext(state.viewingDay!==null?state.viewingDay:day);
@@ -2926,6 +3023,8 @@ function rerenderContext(schedDay){
   if(state.viewingDay!==null){
     const body = document.getElementById("dayModalBody");
     if(body){ body.innerHTML = renderDayCard(state.viewingDay, {suppressScheduleNote:true}); bindDynamicEvents(body); }
+  } else {
+    state.todayDay = schedDay;
   }
   renderShell();
 }
@@ -2955,8 +3054,29 @@ function openDateEventsModal(dateKey){
   document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
   bindDynamicEvents(root);
 }
+function openStatsModal(){
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-scrim" id="scrim">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <h3>Your Progress</h3>
+        <button class="icon-btn" id="closeStatsModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="stats-grid">
+          <div class="stat"><b>${totalCompleteScheduleDays()}</b><span>Days done</span></div>
+          <div class="stat"><b>${currentStreak()}</b><span>Streak</span></div>
+          <div class="stat"><b>${longestStreak()}</b><span>Best streak</span></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("closeStatsModal").onclick = closeModal;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+}
+
 function renderTodayPinned(n){
-  state.tab = "today"; state.viewingDay = null;
+  state.tab = "today"; state.viewingDay = null; state.todayDay = n;
   renderShell();
   const view = document.getElementById("view");
   view.innerHTML = renderDayCard(n);
