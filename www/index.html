@@ -493,15 +493,36 @@ function toFullRef(ref){
 const TAGS = ["Family I","Family II","Secret I","Secret II"];
 
 const VERSIONS = {
-  esv:{ code:"esv", label:"ESV", full:"English Standard Version", requiresKey:true,
+  esv:{ code:"esv", label:"ESV", full:"English Standard Version", requiresKey:true, keyField:"esvKey", keyLabel:"ESV API key",
         copyright:"Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), copyright © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.",
-        link:"https://www.esv.org" },
-  kjv:{ code:"kjv", label:"KJV", full:"King James Version", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com" },
-  web:{ code:"web", label:"WEB", full:"World English Bible", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com" },
-  asv:{ code:"asv", label:"ASV", full:"American Standard Version", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com" },
-  bbe:{ code:"bbe", label:"BBE", full:"Bible in Basic English", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com" }
+        link:"https://www.esv.org", linkLabel:"www.esv.org" },
+  niv:{ code:"niv", label:"NIV", full:"New International Version", requiresKey:true, keyField:"apiBibleKey", keyLabel:"API.Bible key",
+        copyright:"Scripture quotations marked \u201CNIV\u201D are taken from the Holy Bible, New International Version®, NIV®, copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.™ Used by permission. All rights reserved worldwide.",
+        link:"https://www.biblica.com", linkLabel:"biblica.com", provider:"API.Bible" },
+  nlt:{ code:"nlt", label:"NLT", full:"New Living Translation", requiresKey:true, keyField:"nltKey", keyLabel:"NLT API key",
+        copyright:"Scripture quotations marked \u201CNLT\u201D are taken from the Holy Bible, New Living Translation, copyright © 1996, 2004, 2015 by Tyndale House Foundation. Used by permission of Tyndale House Publishers, Carol Stream, Illinois 60188. All rights reserved.",
+        link:"https://www.newlivingtranslation.com", linkLabel:"newlivingtranslation.com", provider:"Tyndale's NLT API" },
+  kjv:{ code:"kjv", label:"KJV", full:"King James Version", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com", linkLabel:"bible-api.com" },
+  bsb:{ code:"bsb", label:"BSB", full:"Berean Standard Bible", requiresKey:false, copyright:"Public domain — dedicated to the public domain by the Berean Bible Translation Committee.", link:"https://bible.helloao.org", linkLabel:"Free Use Bible API (bible.helloao.org)" },
+  web:{ code:"web", label:"WEB", full:"World English Bible", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com", linkLabel:"bible-api.com" },
+  asv:{ code:"asv", label:"ASV", full:"American Standard Version", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com", linkLabel:"bible-api.com" },
+  bbe:{ code:"bbe", label:"BBE", full:"Bible in Basic English", requiresKey:false, copyright:"Public domain.", link:"https://bible-api.com", linkLabel:"bible-api.com" }
 };
-const VERSION_ORDER = ["esv","kjv","web","asv","bbe"];
+const VERSION_ORDER = ["esv","niv","nlt","kjv","bsb","web","asv","bbe"];
+// Standard USFM 3-letter book codes, keyed the same way as BOOK_MAP above — shared by the
+// BSB (Free Use Bible API) and NIV (API.Bible) fetchers, both of which need book codes
+// rather than full names.
+const BOOK_USFM3 = {
+  "gen":"GEN","ex":"EXO","lev":"LEV","num":"NUM","deut":"DEU","josh":"JOS","judg":"JDG","ruth":"RUT",
+  "1 sam":"1SA","2 sam":"2SA","1 kgs":"1KI","2 kgs":"2KI","1 chr":"1CH","2 chr":"2CH","ezra":"EZR","neh":"NEH",
+  "est":"EST","job":"JOB","ps":"PSA","prov":"PRO","eccl":"ECC","sng":"SNG","isa":"ISA","jer":"JER",
+  "lam":"LAM","ezek":"EZK","dan":"DAN","hos":"HOS","joel":"JOL","amos":"AMO","obad":"OBA","jonah":"JON",
+  "mic":"MIC","nahum":"NAM","hab":"HAB","zeph":"ZEP","hag":"HAG","zech":"ZEC","mal":"MAL",
+  "matt":"MAT","mark":"MRK","luke":"LUK","john":"JHN","acts":"ACT","rom":"ROM",
+  "1 cor":"1CO","2 cor":"2CO","gal":"GAL","eph":"EPH","phil":"PHP","col":"COL","1 thes":"1TH","2 thes":"2TH",
+  "1 tim":"1TI","2 tim":"2TI","titus":"TIT","phm":"PHM","heb":"HEB",
+  "jas":"JAS","1 pet":"1PE","2 pet":"2PE","1 jn":"1JN","2 jn":"2JN","3 jn":"3JN","jude":"JUD","rev":"REV"
+};
 
 const LS = {
   get(key, fallback){ try{ const v = localStorage.getItem(key); return v===null? fallback : JSON.parse(v); }catch(e){ return fallback; } },
@@ -510,7 +531,7 @@ const LS = {
 const K = { start:"rootedword.startDate", progress:"rootedword.progress", settings:"rootedword.settings", hl:"rootedword.highlights", roster:"rootedword.roster", events:"rootedword.events", seenSplash:"rootedword.seenSplash" };
 let startDate = LS.get(K.start, null);
 let progress  = LS.get(K.progress, {});
-let settings  = LS.get(K.settings, {theme:"system", accent:"heritage", fontSize:18, fontFamily:"serif", esvKey:"", bibleVersion:"esv", pace:"1yr", senderName:""});
+let settings  = LS.get(K.settings, {theme:"system", accent:"heritage", fontSize:18, fontFamily:"serif", esvKey:"", nltKey:"", apiBibleKey:"", apiBibleNivId:"", bibleVersion:"esv", pace:"1yr", senderName:""});
 settings.accent = settings.accent || "heritage";
 let phl       = LS.get(K.hl, {});
 let roster    = LS.get(K.roster, []); // [{id,name,phone,email}]
@@ -1598,7 +1619,9 @@ function renderSettingsSubhead(title){
 }
 
 function renderSettingsHub(){
-  const versionLabel = VERSIONS[settings.bibleVersion] ? VERSIONS[settings.bibleVersion].label : settings.bibleVersion;
+  const curV = VERSIONS[settings.bibleVersion];
+  const versionLabel = curV ? curV.label : settings.bibleVersion;
+  const versionKeyDesc = curV && curV.requiresKey ? (" · key " + (settings[curV.keyField] ? "saved" : "not set")) : " · public domain";
   const planDesc = (settings.pace==="2yr" ? "2 Years" : "1 Year") + (hasStarted() ? " · started "+niceDateShort(parseYMD(startDate)) : " · not started");
   return `
     <div class="section-title" style="margin-top:4px;">Settings</div>
@@ -1614,7 +1637,7 @@ function renderSettingsHub(){
       <div class="gm-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4c-2-1.3-5-2-8-2v16c3 0 6 .7 8 2 2-1.3 5-2 8-2V2c-3 0-6 .7-8 2Z"/><path d="M12 4v16"/></svg></div>
       <div class="gm-body">
         <div class="gm-title">Bible &amp; Reading</div>
-        <div class="gm-desc">${versionLabel} selected · API key ${settings.esvKey?"saved":"not set"}</div>
+        <div class="gm-desc">${versionLabel} selected${versionKeyDesc}</div>
       </div>
       <div class="gm-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></div>
     </button>
@@ -1684,31 +1707,52 @@ function renderSettingsAppearance(){
 }
 
 function renderSettingsBible(){
-  const key = settings.esvKey || "";
   const versionRows = VERSION_ORDER.map(code=>{
     const v = VERSIONS[code];
     const sel = settings.bibleVersion===code;
     return `<div class="version-row ${sel?'sel':''}" data-act="setversion" data-version="${code}">
       <div><div class="vname">${v.label} <span style="font-weight:400;color:var(--ink-faint);">— ${v.full}</span></div>
-      <div class="vfull">${v.requiresKey? "Requires your free ESV API key" : "Public domain · no key needed"}</div></div>
+      <div class="vfull">${v.requiresKey? ("Requires your free "+v.keyLabel) : "Public domain · no key needed"}</div></div>
       <button class="btn sm ${sel?'gold':''}">${sel? "Selected" : "Use"}</button>
     </div>`;
   }).join("");
   return `
     <div class="set-group">
       <div class="key-row">
-        <div class="desc">Choose which translation opens by default when you tap "Read in app." NIV isn't included — it's commercially licensed and not available for free/solo-developer use; these public‑domain options are open alternatives to compare against the ESV.</div>
+        <div class="desc">Choose which translation opens by default when you tap "Read in app." NIV and NLT need your own free key below — both are free for personal, non‑commercial use (a home or church reading tool qualifies; an app with ads or paid access wouldn't). KJV, BSB, WEB, ASV, and BBE are public domain and need no key at all.</div>
         <div class="version-list">${versionRows}</div>
       </div>
-      <div class="key-row" style="border-top:1px solid var(--border);">
+    </div>
+    <div class="set-group">
+      <div class="key-row">
         <div class="lbl">ESV API key</div>
         <div class="desc">Get a free key at <a href="https://api.esv.org/account/create-application/" target="_blank" rel="noopener">api.esv.org</a>. Used only from your device, for personal non‑commercial reading — never sold or shared.</div>
-        <input type="password" id="esvKeyInput" placeholder="Paste your ESV API key" value="${escapeHtml(key)}">
+        <input type="password" id="esvKeyInput" placeholder="Paste your ESV API key" value="${escapeHtml(settings.esvKey||"")}">
         <div class="field-actions">
-          <button class="btn sm" id="saveKeyBtn">Save key</button>
-          <button class="btn sm ghost" id="testKeyBtn">Test connection</button>
+          <button class="btn sm" id="saveEsvKeyBtn">Save key</button>
+          <button class="btn sm ghost" id="testEsvKeyBtn">Test connection</button>
         </div>
-        <div class="key-status" id="keyStatus"></div>
+        <div class="key-status" id="esvKeyStatus"></div>
+      </div>
+      <div class="key-row" style="border-top:1px solid var(--border);">
+        <div class="lbl">NLT API key</div>
+        <div class="desc">Get a free key at <a href="https://api.nlt.to/Account/Register" target="_blank" rel="noopener">api.nlt.to</a> (Tyndale House). Free for non‑commercial use. Used only from your device.</div>
+        <input type="password" id="nltKeyInput" placeholder="Paste your NLT API key" value="${escapeHtml(settings.nltKey||"")}">
+        <div class="field-actions">
+          <button class="btn sm" id="saveNltKeyBtn">Save key</button>
+          <button class="btn sm ghost" id="testNltKeyBtn">Test connection</button>
+        </div>
+        <div class="key-status" id="nltKeyStatus"></div>
+      </div>
+      <div class="key-row" style="border-top:1px solid var(--border);">
+        <div class="lbl">API.Bible key (for NIV)</div>
+        <div class="desc">Get a free key at <a href="https://api.bible/" target="_blank" rel="noopener">api.bible</a> (American Bible Society). Free tier covers personal, non‑commercial use; NIV specifically can't be used in anything with ads or paid access. Used only from your device.</div>
+        <input type="password" id="apiBibleKeyInput" placeholder="Paste your API.Bible key" value="${escapeHtml(settings.apiBibleKey||"")}">
+        <div class="field-actions">
+          <button class="btn sm" id="saveApiBibleKeyBtn">Save key</button>
+          <button class="btn sm ghost" id="testApiBibleKeyBtn">Test connection</button>
+        </div>
+        <div class="key-status" id="apiBibleKeyStatus"></div>
       </div>
     </div>
   `;
@@ -1776,7 +1820,7 @@ function renderSettingsData(){
 function renderSettingsAbout(){
   return `
     <div class="about-block" style="padding-top:2px;">
-      Rooted in the Word is a companion for the classic M'Cheyne Bible reading plan — read alongside a physical Bible, or in‑app via free Bible text services. Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), copyright © 2001 by Crossway. Used by permission. All rights reserved. <a href="https://www.esv.org" target="_blank" rel="noopener">www.esv.org</a>. KJV, WEB, ASV and BBE are public domain, served via bible-api.com. This app is not affiliated with Crossway, ESV.org, or bible-api.com, and passage text is not stored on this device between sessions.
+      Rooted in the Word is a companion for the classic M'Cheyne Bible reading plan — read alongside a physical Bible, or in‑app via free Bible text services. Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), copyright © 2001 by Crossway. Used by permission. All rights reserved. <a href="https://www.esv.org" target="_blank" rel="noopener">www.esv.org</a>. NIV quotations are from the New International Version®, copyright © Biblica, Inc., served via API.Bible with your own free key. NLT quotations are from the New Living Translation, copyright © Tyndale House Foundation, served via Tyndale's api.nlt.to with your own free key. KJV, WEB, ASV and BBE are public domain, served via bible-api.com. BSB is public domain, served via the Free Use Bible API (bible.helloao.org). This app is not affiliated with Crossway, ESV.org, Biblica, API.Bible, Tyndale House, bible-api.com, or bible.helloao.org, and passage text is not stored on this device between sessions.
     </div>
   `;
 }
@@ -1955,13 +1999,13 @@ async function loadPassage(ref){
   state.readerRef = ref; state.readerVersion = version;
   const v = VERSIONS[version];
   if(cr) cr.innerHTML = v.requiresKey
-    ? `${escapeHtml(v.copyright)} <a href="${v.link}" target="_blank" rel="noopener">www.esv.org</a>`
-    : `${v.full} — public domain. Served via <a href="${v.link}" target="_blank" rel="noopener">bible-api.com</a>.`;
+    ? `${escapeHtml(v.copyright)} <a href="${v.link}" target="_blank" rel="noopener">${escapeHtml(v.linkLabel)}</a>`
+    : `${v.full} — public domain. Served via <a href="${v.link}" target="_blank" rel="noopener">${escapeHtml(v.linkLabel)}</a>.`;
 
-  if(v.requiresKey && !settings.esvKey){
+  if(v.requiresKey && !settings[v.keyField]){
     el.innerHTML = `<div class="reader-status">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
-      <div>Add a free ESV API key in Settings, or switch to KJV / WEB / ASV / BBE above — no key needed.</div>
+      <div>Add a free ${escapeHtml(v.keyLabel)} in Settings, or switch to KJV / BSB / WEB / ASV / BBE above — no key needed.</div>
     </div>`;
     return;
   }
@@ -1970,7 +2014,11 @@ async function loadPassage(ref){
 
   el.innerHTML = `<div class="reader-status"><span>Loading ${escapeHtml(ref)} (${v.label})…</span></div>`;
   try{
-    const verses = version==="esv" ? await fetchESVVerses(ref) : await fetchBibleApiVerses(ref, version);
+    const verses = version==="esv" ? await fetchESVVerses(ref)
+      : version==="bsb" ? await fetchHelloAOVerses(ref)
+      : version==="nlt" ? await fetchNltVerses(ref)
+      : version==="niv" ? await fetchApiBibleVerses(ref)
+      : await fetchBibleApiVerses(ref, version);
     attachChapterVerse(ref, verses);
     sessionPassageCache[memKey] = verses;
     renderVersesFromMemory(ref);
@@ -2129,6 +2177,143 @@ async function fetchBibleApiVerses(ref, version){
   if(data.verses && data.verses.length) return data.verses.map(v=>({ label:(v.chapter+":"+v.verse), text: v.text.trim() }));
   if(data.text) return [{label:"", text:data.text.trim()}];
   throw new Error("empty passage");
+}
+// Parses a PLAN-style reference ("Gen 1", "Gen 9-10", "Ps 78:1-39") into its book-abbreviation
+// and chapter/verse structure. Mirrors the same three shapes attachChapterVerse() already
+// recognizes, but returns them as numbers up front for fetchers that need to build their own
+// per-book, per-chapter API calls (BSB and NIV), rather than passing a free-text query string.
+function parseRefStructured(ref){
+  const bm = ref.match(/^((?:[1-3]\s)?[A-Za-z]+)\s+(.+)$/);
+  if(!bm) return null;
+  const abbrev = bm[1].toLowerCase().trim();
+  const rest = bm[2];
+  const rangeMatch = rest.match(/^(\d+)-(\d+)$/);
+  const cvMatch = rest.match(/^(\d+):(\d+)(?:-(\d+))?$/);
+  const singleMatch = rest.match(/^(\d+)$/);
+  if(rangeMatch) return { abbrev, chStart:+rangeMatch[1], chEnd:+rangeMatch[2], vStart:null, vEnd:null };
+  if(cvMatch) return { abbrev, chStart:+cvMatch[1], chEnd:+cvMatch[1], vStart:+cvMatch[2], vEnd: cvMatch[3]?+cvMatch[3]:+cvMatch[2] };
+  if(singleMatch) return { abbrev, chStart:+singleMatch[1], chEnd:+singleMatch[1], vStart:null, vEnd:null };
+  return null;
+}
+// BSB via the Free Use Bible API (bible.helloao.org) — public domain, no key, no CORS issues.
+// We fetch whole chapters and, for a verse-range reference, trim to the requested verses
+// ourselves (the API only serves whole chapters at a time).
+async function fetchHelloAOVerses(ref){
+  const p = parseRefStructured(ref);
+  if(!p) throw new Error("couldn't parse this reference");
+  const code = BOOK_USFM3[p.abbrev];
+  if(!code) throw new Error("unknown book");
+  let all = [];
+  for(let c=p.chStart; c<=p.chEnd; c++){
+    const res = await fetch("https://bible.helloao.org/api/BSB/"+code+"/"+c+".json");
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data = await res.json();
+    const chObj = data.chapter || data;
+    const content = chObj.content || [];
+    content.forEach(item=>{
+      if(item && item.type==="verse"){
+        const text = (item.content||[]).map(x=> typeof x==="string" ? x : "").join(" ").replace(/\s+/g," ").trim();
+        if(text) all.push({ label:String(item.number), text, _num:item.number, _ch:c });
+      }
+    });
+  }
+  if(p.vStart!=null) all = all.filter(v=> v._ch===p.chStart && v._num>=p.vStart && v._num<=p.vEnd);
+  all.forEach(v=>{ delete v._num; delete v._ch; });
+  if(!all.length) throw new Error("empty passage");
+  return all;
+}
+// NLT via Tyndale's api.nlt.to — free with a personal key, non-commercial use. The API returns
+// an HTML fragment with one <verse_export> element per verse; we strip verse-number and
+// footnote-marker spans and keep the remaining text.
+function toNltRef(ref){
+  const full = toFullRef(ref);
+  const m = full.match(/^(.+?)\s+(.+)$/);
+  if(!m) return full;
+  return m[1] + "." + m[2].replace(/:/g, ".");
+}
+async function fetchNltVerses(ref){
+  if(!settings.nltKey) throw new Error("missing NLT key");
+  const nref = toNltRef(ref);
+  const url = "https://api.nlt.to/api/passages?ref="+encodeURIComponent(nref)+"&version=NLT&key="+encodeURIComponent(settings.nltKey);
+  const res = await fetch(url);
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const html = await res.text();
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  const nodes = container.querySelectorAll("verse_export");
+  const verses = [];
+  nodes.forEach(node=>{
+    const clone = node.cloneNode(true);
+    clone.querySelectorAll(".tn, .a-tn, .vn").forEach(n=>n.remove());
+    const text = clone.textContent.replace(/\s+/g," ").trim();
+    const num = node.getAttribute("vn") || "";
+    if(text) verses.push({label:num, text});
+  });
+  if(!verses.length) throw new Error("empty passage — check your NLT API key");
+  return verses;
+}
+// NIV via API.Bible (rest.api.bible) — free with a personal key, non-commercial use only.
+// The NIV's internal Bible ID isn't fixed, so the first successful key test (or first NIV
+// read) resolves it from the key's own /bibles list and caches it in settings.
+async function resolveApiBibleId(){
+  if(settings.apiBibleNivId) return settings.apiBibleNivId;
+  const res = await fetch("https://rest.api.bible/v1/bibles", { headers:{ "api-key": settings.apiBibleKey } });
+  if(!res.ok) throw new Error("HTTP "+res.status+" — check your API.Bible key");
+  const data = await res.json();
+  const list = (data && data.data) || [];
+  let match = list.find(b=> (b.abbreviationLocal||b.abbreviation||"").toUpperCase()==="NIV" && (!b.language || b.language.id==="eng"));
+  if(!match) match = list.find(b=> /niv/i.test(b.abbreviationLocal||b.abbreviation||""));
+  if(!match) throw new Error("NIV isn't available on this API.Bible key's plan");
+  settings.apiBibleNivId = match.id;
+  saveSettings();
+  return match.id;
+}
+function extractApiBibleVerses(html){
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  const verses = [];
+  let current = null;
+  function isSkippable(node){
+    const cls = " "+(node.className||"")+" ";
+    return node.tagName==="NOTE" || /\s(f|note|fn)\s/.test(cls);
+  }
+  function walk(node){
+    if(node.nodeType===3){ if(current) current.text += node.textContent; return; }
+    if(node.nodeType!==1) return;
+    const cls = " "+(node.className||"")+" ";
+    if(/\sv\s/.test(cls)){
+      if(current && current.text.trim()) verses.push(current);
+      current = { label: node.getAttribute("data-number")||node.textContent.trim(), text:"" };
+      return;
+    }
+    if(isSkippable(node)) return;
+    node.childNodes.forEach(walk);
+  }
+  container.childNodes.forEach(walk);
+  if(current && current.text.trim()) verses.push(current);
+  verses.forEach(v=> v.text = v.text.replace(/\s+/g," ").trim());
+  return verses.filter(v=>v.text);
+}
+async function fetchApiBibleVerses(ref){
+  if(!settings.apiBibleKey) throw new Error("missing API.Bible key");
+  const p = parseRefStructured(ref);
+  if(!p) throw new Error("couldn't parse this reference");
+  const code = BOOK_USFM3[p.abbrev];
+  if(!code) throw new Error("unknown book");
+  const bibleId = await resolveApiBibleId();
+  let passageId;
+  if(p.vStart!=null) passageId = code+"."+p.chStart+"."+p.vStart + ((p.vEnd && p.vEnd!==p.vStart) ? ("-"+code+"."+p.chStart+"."+p.vEnd) : "");
+  else if(p.chStart!==p.chEnd) passageId = code+"."+p.chStart+"-"+code+"."+p.chEnd;
+  else passageId = code+"."+p.chStart;
+  const url = "https://rest.api.bible/v1/bibles/"+bibleId+"/passages/"+encodeURIComponent(passageId)+
+    "?content-type=html&include-verse-numbers=true&include-titles=false&include-footnotes=false&include-chapter-numbers=false";
+  const res = await fetch(url, { headers:{ "api-key": settings.apiBibleKey } });
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const data = await res.json();
+  const html = (data && data.data && data.data.content) || "";
+  const verses = extractApiBibleVerses(html);
+  if(!verses.length) throw new Error("empty passage");
+  return verses;
 }
 
 function setupVerseTapToHighlight(ref){
@@ -2663,33 +2848,58 @@ function renderTodayPinned(n){
   bindDynamicEvents(view);
 }
 
-function bindSettingsEvents(root){
-  const saveKeyBtn = root.querySelector("#saveKeyBtn");
-  if(saveKeyBtn && !saveKeyBtn._bound){
-    saveKeyBtn._bound = true;
-    saveKeyBtn.addEventListener("click", ()=>{
-      settings.esvKey = root.querySelector("#esvKeyInput").value.trim();
-      saveSettings(); toast("API key saved");
+// Shared wiring for a Settings "API key" block (input + Save + Test connection + status line).
+// cfg.test(keyVal) should throw on failure and may return extra fields to store on settings
+// (used by API.Bible to cache the resolved NIV bible ID once a working key is confirmed).
+function bindKeyBlock(root, cfg){
+  const saveBtn = root.querySelector("#"+cfg.saveId);
+  if(saveBtn && !saveBtn._bound){
+    saveBtn._bound = true;
+    saveBtn.addEventListener("click", ()=>{
+      settings[cfg.field] = root.querySelector("#"+cfg.inputId).value.trim();
+      saveSettings(); toast(cfg.label+" saved");
     });
   }
-  const testKeyBtn = root.querySelector("#testKeyBtn");
-  if(testKeyBtn && !testKeyBtn._bound){
-    testKeyBtn._bound = true;
-    testKeyBtn.addEventListener("click", async ()=>{
-      const status = root.querySelector("#keyStatus");
-      const keyVal = root.querySelector("#esvKeyInput").value.trim();
+  const testBtn = root.querySelector("#"+cfg.testId);
+  if(testBtn && !testBtn._bound){
+    testBtn._bound = true;
+    testBtn.addEventListener("click", async ()=>{
+      const status = root.querySelector("#"+cfg.statusId);
+      const keyVal = root.querySelector("#"+cfg.inputId).value.trim();
       status.textContent = "Testing…"; status.className="key-status";
       try{
-        const res = await fetch("https://api.esv.org/v3/passage/text/?q=John+3:16", { headers:{ "Authorization":"Token "+keyVal } });
-        if(!res.ok) throw new Error("HTTP "+res.status);
-        const data = await res.json();
-        if(data.passages && data.passages[0]){
-          status.textContent = "Connected — API key works."; status.className="key-status ok";
-          settings.esvKey = keyVal; saveSettings();
-        } else throw new Error("Unexpected response");
+        await cfg.test(keyVal);
+        status.textContent = "Connected — API key works."; status.className="key-status ok";
+        settings[cfg.field] = keyVal; saveSettings();
       }catch(e){ status.textContent = "Couldn't connect: "+e.message; status.className="key-status err"; }
     });
   }
+}
+async function testEsvKey(keyVal){
+  const res = await fetch("https://api.esv.org/v3/passage/text/?q=John+3:16", { headers:{ "Authorization":"Token "+keyVal } });
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const data = await res.json();
+  if(!(data.passages && data.passages[0])) throw new Error("Unexpected response");
+}
+async function testNltKey(keyVal){
+  const res = await fetch("https://api.nlt.to/api/passages?ref=John.3.16&version=NLT&key="+encodeURIComponent(keyVal));
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const html = await res.text();
+  if(!html || html.length<20) throw new Error("Unexpected response");
+}
+async function testApiBibleKey(keyVal){
+  const res = await fetch("https://rest.api.bible/v1/bibles", { headers:{ "api-key": keyVal } });
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const data = await res.json();
+  const list = (data && data.data) || [];
+  const match = list.find(b=> (b.abbreviationLocal||b.abbreviation||"").toUpperCase()==="NIV");
+  if(!match) throw new Error("key works, but no NIV license on this plan");
+  settings.apiBibleNivId = match.id;
+}
+function bindSettingsEvents(root){
+  bindKeyBlock(root, { saveId:"saveEsvKeyBtn", testId:"testEsvKeyBtn", inputId:"esvKeyInput", statusId:"esvKeyStatus", field:"esvKey", label:"ESV key", test:testEsvKey });
+  bindKeyBlock(root, { saveId:"saveNltKeyBtn", testId:"testNltKeyBtn", inputId:"nltKeyInput", statusId:"nltKeyStatus", field:"nltKey", label:"NLT key", test:testNltKey });
+  bindKeyBlock(root, { saveId:"saveApiBibleKeyBtn", testId:"testApiBibleKeyBtn", inputId:"apiBibleKeyInput", statusId:"apiBibleKeyStatus", field:"apiBibleKey", label:"API.Bible key", test:testApiBibleKey });
   const saveStartBtn = root.querySelector("#saveStartBtn");
   if(saveStartBtn && !saveStartBtn._bound){
     saveStartBtn._bound = true;
@@ -2792,7 +3002,7 @@ function bindSettingsEvents(root){
     resetAllBtn.addEventListener("click", ()=>{
       if(confirm("This permanently erases all app data on this device. Continue?")){
         Object.values(K).forEach(k=>localStorage.removeItem(k));
-        startDate=null; progress={}; settings={theme:"system",accent:"heritage",fontSize:18,fontFamily:"serif",esvKey:"",bibleVersion:"esv",pace:"1yr"}; phl={}; roster=[]; events=[]; state.selectedRoster=new Set();
+        startDate=null; progress={}; settings={theme:"system",accent:"heritage",fontSize:18,fontFamily:"serif",esvKey:"",nltKey:"",apiBibleKey:"",apiBibleNivId:"",bibleVersion:"esv",pace:"1yr"}; phl={}; roster=[]; events=[]; state.selectedRoster=new Set();
         applyTheme(); renderShell();
       }
     });
