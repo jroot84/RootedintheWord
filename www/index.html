@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Rooted in the Word — Reading Journal</title>
-<link rel="icon" href="data:,">
+<meta name="description" content="A companion for the M'Cheyne Bible reading plan — checklist, schedule, journal, and group tools.">
+<meta name="theme-color" content="#7C2B3F">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
@@ -413,7 +419,7 @@ const LS = {
   get(key, fallback){ try{ const v = localStorage.getItem(key); return v===null? fallback : JSON.parse(v); }catch(e){ return fallback; } },
   set(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
 };
-const K = { start:"rootedword.startDate", progress:"rootedword.progress", settings:"rootedword.settings", hl:"rootedword.highlights", roster:"rootedword.roster", events:"rootedword.events" };
+const K = { start:"rootedword.startDate", progress:"rootedword.progress", settings:"rootedword.settings", hl:"rootedword.highlights", roster:"rootedword.roster", events:"rootedword.events", seenSplash:"rootedword.seenSplash" };
 let startDate = LS.get(K.start, null);
 let progress  = LS.get(K.progress, {});
 let settings  = LS.get(K.settings, {theme:"system", accent:"heritage", fontSize:18, fontFamily:"serif", esvKey:"", bibleVersion:"esv", pace:"1yr"});
@@ -476,6 +482,7 @@ function niceDateShort(d){ return d.toLocaleDateString(undefined,{month:"short",
 let state = { tab:"today", planMode:"list", viewingDay:null, calCursor:null, searchQuery:"",
   selectedRoster:new Set(), editingRosterId:null, shareDraft:null,
   groupMode:"roster", meetingsMode:"list", meetingsCalCursor:null, viewingEventId:null, editingEventId:null,
+  messageModalOpen:false,
   eventInviteSelected:new Set(), eventDraft:null };
 
 function applyTheme(){
@@ -947,12 +954,33 @@ function renderComposeModalBody(){
   const emails = selPeople.filter(p=>p.email).map(p=>p.email).join(",");
   const smsHref = "sms:"+encodeURIComponent(textNums)+(/iPad|iPhone|iPod/.test(navigator.userAgent)?"&":"?")+"body="+encodeURIComponent(text);
   const mailHref = "mailto:?bcc="+encodeURIComponent(emails)+"&subject="+encodeURIComponent("Rooted in the Word")+"&body="+encodeURIComponent(text);
-  const names = selPeople.map(p=>p.name).join(", ");
+  const selCount = state.selectedRoster.size;
+
+  const peopleRows = roster.length===0
+    ? `<div class="empty-state" style="padding:16px;"><p>Add someone to your roster first, then come back to send a message.</p></div>`
+    : roster.map(p=>{
+        const on = state.selectedRoster.has(p.id);
+        const contact = [p.phone, p.email].filter(Boolean).join(" · ");
+        return `<div class="roster-row">
+          <button class="roster-check ${on?'on':''}" data-act="toggleroster" data-id="${p.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg>
+          </button>
+          <div class="roster-body"><div class="roster-name">${escapeHtml(p.name)}</div><div class="roster-contact">${escapeHtml(contact)||"No contact info"}</div></div>
+        </div>`;
+      }).join("");
+
   return `
-    <div class="compose-card" style="border:none;box-shadow:none;padding:0;">
-      <div class="desc" style="font-size:12.5px;color:var(--ink-soft);">
-        ${selPeople.length? "To: "+escapeHtml(names) : "No one selected yet — go back and check people in your roster first."}
-      </div>
+    <div class="section-title" style="margin-top:0;">To</div>
+    ${roster.length>0?`<div class="roster-selectbar">
+      <span>${selCount} selected</span>
+      <span style="display:flex;gap:10px;">
+        <button class="btn sm ghost" id="selectAllRosterBtn">Select all</button>
+        <button class="btn sm ghost" id="clearRosterSelBtn">Clear</button>
+      </span>
+    </div>`:""}
+    ${peopleRows}
+    <div class="compose-card" style="margin-top:16px;">
+      <div class="lbl" style="font-size:13px;font-weight:700;margin-bottom:6px;">Message</div>
       <textarea id="shareTextArea">${escapeHtml(text)}</textarea>
       <div class="field-actions">
         <button class="btn sm ghost" id="resetShareTextBtn">Use today's reading</button>
@@ -965,7 +993,13 @@ function renderComposeModalBody(){
   `;
 }
 
+function rerenderMessageModal(){
+  const body = document.querySelector("#modalRoot .modal-body");
+  if(body){ body.innerHTML = renderComposeModalBody(); bindDynamicEvents(document.getElementById("modalRoot")); }
+}
+
 function openMessageModal(){
+  state.messageModalOpen = true;
   const root = document.getElementById("modalRoot");
   root.innerHTML = `<div class="modal-scrim" id="scrim">
     <div class="modal-sheet">
@@ -1099,6 +1133,32 @@ function renderMeetingsCalendar(){
   </div>`;
 }
 
+function wireShareIcsBtn(){
+  const btn = document.getElementById("shareIcsBtn");
+  if(!btn) return;
+  const id = btn.dataset.eventId;
+  const ev = events.find(x=>x.id===id);
+  if(!ev) return;
+  let supported = false;
+  try{
+    if(navigator.canShare && typeof File !== "undefined"){
+      const testFile = new File(["test"], "test.ics", {type:"text/calendar"});
+      supported = navigator.canShare({ files:[testFile] });
+    }
+  }catch(e){ supported = false; }
+  if(!supported) return; // stays hidden on desktop / unsupported browsers
+  btn.classList.remove("hidden");
+  btn.onclick = async ()=>{
+    try{
+      const icsText = buildICS(ev);
+      const fileName = (ev.title||"event").replace(/[^a-z0-9]/gi,"-")+".ics";
+      const file = new File([icsText], fileName, {type:"text/calendar"});
+      const shareText = `You're invited: ${ev.title}\n${niceEventDate(ev)}${ev.location?"\nLocation: "+ev.location:""}\n\n— shared from Rooted in the Word`;
+      await navigator.share({ files:[file], title: ev.title, text: shareText });
+    }catch(e){ /* user cancelled — nothing to do */ }
+  };
+}
+
 function buildICS(ev){
   const dt = ev.date.replace(/-/g,"");
   const timePart = ev.time ? ev.time.replace(":","")+"00" : "090000";
@@ -1131,6 +1191,7 @@ function openEventModal(id){
   document.getElementById("closeEventModal").onclick = closeModal;
   document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
   bindDynamicEvents(root);
+  wireShareIcsBtn();
 }
 
 function renderEventDetail(id){
@@ -1200,11 +1261,15 @@ function renderEventDetail(id){
 
     <div class="section-title">Invite</div>
     <div class="compose-card">
-      <div class="desc" style="font-size:12px;color:var(--ink-soft);">Select people, then send the invite by text or email.</div>
+      <div class="desc" style="font-size:12px;color:var(--ink-soft);">Select people, then send the invite by text or email. On phones that support it, "Share with calendar file" attaches the .ics directly.</div>
       ${inviteRows}
       <div class="compose-actions">
         <a class="btn gold sm" href="${selPeople.some(p=>p.phone)?smsHref:'#'}" ${selPeople.some(p=>p.phone)?'':'style="opacity:.4;pointer-events:none;"'}>Text invite (${selPeople.filter(p=>p.phone).length})</a>
         <a class="btn sm" href="${selPeople.some(p=>p.email)?mailHref:'#'}" ${selPeople.some(p=>p.email)?'':'style="opacity:.4;pointer-events:none;"'}>Email invite (${selPeople.filter(p=>p.email).length})</a>
+        <button class="btn sm hidden" id="shareIcsBtn" data-event-id="${id}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>
+          Share with calendar file
+        </button>
       </div>
     </div>
 
@@ -1376,7 +1441,7 @@ function openDayModal(n){
   bindDynamicEvents(root);
 }
 function closeModal(){
-  state.viewingDay=null; state.viewingEventId=null; state.editingEventId=null;
+  state.viewingDay=null; state.viewingEventId=null; state.editingEventId=null; state.messageModalOpen=false;
   document.getElementById("modalRoot").innerHTML=""; renderShell();
 }
 
@@ -1652,7 +1717,7 @@ function bindDynamicEvents(root){
       } else if(act==="toggleroster"){
         const id = el.dataset.id;
         if(state.selectedRoster.has(id)) state.selectedRoster.delete(id); else state.selectedRoster.add(id);
-        renderShell();
+        if(state.messageModalOpen){ rerenderMessageModal(); } else { renderShell(); }
       } else if(act==="editperson"){
         state.editingRosterId = el.dataset.id; renderShell();
       } else if(act==="canceledit"){
@@ -1790,12 +1855,18 @@ function bindGroupEvents(root){
   const selAllBtn = root.querySelector("#selectAllRosterBtn");
   if(selAllBtn && !selAllBtn._bound){
     selAllBtn._bound = true;
-    selAllBtn.addEventListener("click", ()=>{ roster.forEach(p=>state.selectedRoster.add(p.id)); renderShell(); });
+    selAllBtn.addEventListener("click", ()=>{
+      roster.forEach(p=>state.selectedRoster.add(p.id));
+      if(state.messageModalOpen){ rerenderMessageModal(); } else { renderShell(); }
+    });
   }
   const clearSelBtn = root.querySelector("#clearRosterSelBtn");
   if(clearSelBtn && !clearSelBtn._bound){
     clearSelBtn._bound = true;
-    clearSelBtn.addEventListener("click", ()=>{ state.selectedRoster.clear(); renderShell(); });
+    clearSelBtn.addEventListener("click", ()=>{
+      state.selectedRoster.clear();
+      if(state.messageModalOpen){ rerenderMessageModal(); } else { renderShell(); }
+    });
   }
   const resetShareBtn = root.querySelector("#resetShareTextBtn");
   if(resetShareBtn && !resetShareBtn._bound){
@@ -1843,7 +1914,7 @@ function rerenderContext(schedDay){
 }
 function rerenderEventModal(){
   const body = document.getElementById("eventModalBody");
-  if(body && state.viewingEventId){ body.innerHTML = renderEventDetail(state.viewingEventId); bindDynamicEvents(body); }
+  if(body && state.viewingEventId){ body.innerHTML = renderEventDetail(state.viewingEventId); bindDynamicEvents(body); wireShareIcsBtn(); }
 }
 function openDateEventsModal(dateKey){
   const dayEvents = events.filter(ev=>ev.date===dateKey);
@@ -2071,6 +2142,19 @@ document.getElementById("splashBtn").addEventListener("click", ()=>{
   if(startDate){ switchToApp(); } else { switchToOnboarding(); }
 });
 document.getElementById("splashExploreBtn").addEventListener("click", switchToApp);
+
+if(LS.get(K.seenSplash, false)){
+  document.getElementById("splash").classList.add("hidden");
+  switchToApp();
+} else {
+  LS.set(K.seenSplash, true);
+}
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>
