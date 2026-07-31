@@ -524,6 +524,25 @@ const BOOK_USFM3 = {
   "jas":"JAS","1 pet":"1PE","2 pet":"2PE","1 jn":"1JN","2 jn":"2JN","3 jn":"3JN","jude":"JUD","rev":"REV"
 };
 
+// Chapter counts per book, keyed the same way as BOOK_MAP — powers the free-browse
+// book/chapter picker (Plan tab → Browse).
+const BOOK_CHAPTERS = {
+  "gen":50,"ex":40,"lev":27,"num":36,"deut":34,"josh":24,"judg":21,"ruth":4,
+  "1 sam":31,"2 sam":24,"1 kgs":22,"2 kgs":25,"1 chr":29,"2 chr":36,"ezra":10,"neh":13,
+  "est":10,"job":42,"ps":150,"prov":31,"eccl":12,"sng":8,"isa":66,"jer":52,
+  "lam":5,"ezek":48,"dan":12,"hos":14,"joel":3,"amos":9,"obad":1,"jonah":4,
+  "mic":7,"nahum":3,"hab":3,"zeph":3,"hag":2,"zech":14,"mal":4,
+  "matt":28,"mark":16,"luke":24,"john":21,"acts":28,"rom":16,
+  "1 cor":16,"2 cor":13,"gal":6,"eph":6,"phil":4,"col":4,"1 thes":5,"2 thes":3,
+  "1 tim":6,"2 tim":4,"titus":3,"phm":1,"heb":13,
+  "jas":5,"1 pet":5,"2 pet":3,"1 jn":5,"2 jn":1,"3 jn":1,"jude":1,"rev":22
+};
+// Converts a BOOK_MAP abbreviation key ("1 sam", "ps", "sng") into the display form
+// used inside PLAN refs ("1 Sam", "Ps", "Sng") — i.e. capitalize each word except a
+// leading chapter-count numeral.
+function abbrevDisplay(abbrev){
+  return abbrev.split(" ").map(w=> /^[1-3]$/.test(w) ? w : (w.charAt(0).toUpperCase()+w.slice(1))).join(" ");
+}
 const LS = {
   get(key, fallback){ try{ const v = localStorage.getItem(key); return v===null? fallback : JSON.parse(v); }catch(e){ return fallback; } },
   set(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
@@ -589,6 +608,7 @@ function niceDate(d){ return d.toLocaleDateString(undefined,{weekday:"short",mon
 function niceDateShort(d){ return d.toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
 
 let state = { tab:"today", planMode:"list", viewingDay:null, calCursor:null, searchQuery:"",
+  planSearchQuery:"", browseBook:null, browseSearchQuery:"",
   selectedRoster:new Set(), editingRosterId:null, shareDraft:null, messageSubject:null,
   groupMode:"hub", recipientPickerOpen:false,
   meetingsMode:"list", meetingsFilter:"upcoming", meetingsCalCursor:null,
@@ -775,11 +795,20 @@ function renderPlan(){
   return `
     <div class="seg">
       <button data-planmode="list" class="${mode==='list'?'active':''}">List</button>
+      <button data-planmode="browse" class="${mode==='browse'?'active':''}">Browse</button>
       <button data-planmode="cal" class="${mode==='cal'?'active':''}">Calendar</button>
       <button data-planmode="missed" class="${mode==='missed'?'active':''}">Missed${missedCount()?` (${missedCount()})`:''}</button>
     </div>
-    ${mode==='list' ? renderPlanList() : mode==='cal' ? renderPlanCalendar() : renderMissed()}
+    ${mode==='list' ? renderPlanList() : mode==='browse' ? renderPlanBrowse() : mode==='cal' ? renderPlanCalendar() : renderMissed()}
   `;
+}
+// Matches a day's PLAN refs against a free-text filter (Plan List search) — checks both the
+// abbreviated form used in PLAN ("Matt 5") and the full book name ("Matthew 5") so people can
+// type either.
+function planRowMatches(refs, query){
+  const q = (query||"").trim().toLowerCase();
+  if(!q) return true;
+  return refs.some(ref=> ref.toLowerCase().includes(q) || toFullRef(ref).toLowerCase().includes(q));
 }
 
 function missedCount(){
@@ -820,14 +849,30 @@ function renderMissed(){
 }
 
 function renderPlanList(){
+  return `<div class="search-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input type="text" id="planSearch" placeholder="Filter by book or chapter (e.g. Matthew, Ps 23)…" value="${escapeHtml(state.planSearchQuery)}">
+  </div>
+  <div id="planListResults">${renderPlanListRows()}</div>`;
+}
+function renderPlanListRows(){
   const total = totalScheduleDays();
-  if(!hasStarted()){
+  const q = state.planSearchQuery;
+  const started = hasStarted();
+  const items = [];
+  for(let n=1;n<=total;n++){
+    const info = scheduleDayInfo(n);
+    const refs = info.refIdx.map(i=>PLAN[info.planDay-1][i]);
+    if(!planRowMatches(refs, q)) continue;
+    items.push({n, info, refs});
+  }
+  const noMatch = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><p>No readings match "${escapeHtml(q)}".</p></div>`;
+  if(!started){
     let html = `<div class="schedule-note" style="margin-bottom:14px;"><span>Browsing the plan — set a start date to see real calendar dates and unlock the calendar &amp; missed views.</span><button class="btn sm primary" data-act="beginplan">Begin the Plan</button></div>`;
-    for(let n=1;n<=total;n++){
-      const info = scheduleDayInfo(n);
+    if(!items.length) return html + (q ? noMatch : "");
+    items.forEach(({n,info,refs})=>{
       const e = getEntry(info.planDay);
       const complete = isScheduleDayComplete(n);
-      const refs = info.refIdx.map(i=>PLAN[info.planDay-1][i]);
       html += `<div class="plan-row ${complete?'complete':''}" data-act="opendaymodal" data-day="${n}">
         <div class="pd-num">${complete? checkIconSm() : n}</div>
         <div class="pd-body">
@@ -839,23 +884,24 @@ function renderPlanList(){
           ${e.note?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink-faint)"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg>`:""}
         </div>
       </div>`;
-    }
+    });
     return html;
   }
+  if(!items.length) return noMatch;
   let html = "";
   let curMonth = null;
-  for(let n=1;n<=total;n++){
+  let openGroup = false;
+  items.forEach(({n,info,refs})=>{
     const d = dateForDay(n);
     const label = monthName(d.getMonth())+" "+d.getFullYear();
     if(label!==curMonth){
+      if(openGroup) html += `</div>`;
       html += `<div class="month-group"><div class="month-head">${label}</div>`;
-      curMonth = label;
+      curMonth = label; openGroup = true;
     }
-    const info = scheduleDayInfo(n);
     const e = getEntry(info.planDay);
     const complete = isScheduleDayComplete(n);
     const today = n===scheduledDayToday();
-    const refs = info.refIdx.map(i=>PLAN[info.planDay-1][i]);
     html += `<div class="plan-row ${complete?'complete':''} ${today?'today':''}" data-act="opendaymodal" data-day="${n}">
       <div class="pd-num">${complete? checkIconSm() : n}</div>
       <div class="pd-body">
@@ -867,14 +913,48 @@ function renderPlanList(){
         ${e.note?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink-faint)"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg>`:""}
       </div>
     </div>`;
-    if(n===total) html += `</div>`;
-    else {
-      const nd = dateForDay(n+1);
-      const nlabel = monthName(nd.getMonth())+" "+nd.getFullYear();
-      if(nlabel!==curMonth) html += `</div>`;
-    }
-  }
+  });
+  if(openGroup) html += `</div>`;
   return html;
+}
+// Free-browse: pick any book (grouped OT/NT, filterable) then any chapter, and read it
+// in the same reader used for plan readings — with no plan-day tracking attached.
+function renderPlanBrowse(){
+  if(state.browseBook) return renderBrowseChapterGrid();
+  return `<div class="search-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input type="text" id="browseBookSearch" placeholder="Find a book…" value="${escapeHtml(state.browseSearchQuery||"")}">
+  </div>
+  <div id="browseResults">${renderBrowseBookList()}</div>`;
+}
+function renderBrowseBookList(){
+  const abbrevs = Object.keys(BOOK_MAP);
+  const otBooks = abbrevs.slice(0,39);
+  const ntBooks = abbrevs.slice(39);
+  const q = (state.browseSearchQuery||"").trim().toLowerCase();
+  const renderList = (list)=> list.filter(ab=> !q || ab.includes(q) || BOOK_MAP[ab].toLowerCase().includes(q))
+    .map(ab=>`<button class="group-menu-row" data-act="browsebook" data-book="${ab}" style="margin-bottom:6px;">
+      <div class="gm-body"><div class="gm-title">${BOOK_MAP[ab]}</div><div class="gm-desc">${BOOK_CHAPTERS[ab]} chapter${BOOK_CHAPTERS[ab]===1?'':'s'}</div></div>
+      <div class="gm-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></div>
+    </button>`).join("");
+  const otHtml = renderList(otBooks);
+  const ntHtml = renderList(ntBooks);
+  if(!otHtml && !ntHtml) return `<div class="empty-state"><p>No books match your search.</p></div>`;
+  return `${otHtml? `<div class="section-title">Old Testament</div>${otHtml}`:""}${ntHtml? `<div class="section-title">New Testament</div>${ntHtml}`:""}`;
+}
+function renderBrowseChapterGrid(){
+  const ab = state.browseBook;
+  const chapters = BOOK_CHAPTERS[ab] || 1;
+  const full = BOOK_MAP[ab] || ab;
+  let grid = `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">`;
+  for(let c=1;c<=chapters;c++){
+    grid += `<button class="btn sm" data-act="browsechapter" data-book="${ab}" data-chapter="${c}" style="justify-content:center;">${c}</button>`;
+  }
+  grid += `</div>`;
+  return `<div class="group-subhead">
+    <button class="icon-btn" data-act="browseback" title="Back to books"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="gsh-title">${escapeHtml(full)}</div>
+  </div>${grid}`;
 }
 function checkIconSm(){ return `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3" style="color:var(--green)"><path d="M5 12l5 5L19 7"/></svg>`; }
 
@@ -2546,6 +2626,16 @@ function bindDynamicEvents(root){
         events = events.filter(x=>x.id!==el.dataset.id);
         saveEvents();
         closeModal();
+      } else if(act==="browsebook"){
+        state.browseBook = el.dataset.book;
+        renderShell();
+      } else if(act==="browseback"){
+        state.browseBook = null;
+        renderShell();
+      } else if(act==="browsechapter"){
+        const ref = abbrevDisplay(el.dataset.book) + " " + el.dataset.chapter;
+        state.readerStack = [];
+        openReader(0, ref);
       }
     });
   });
@@ -2603,6 +2693,24 @@ function bindDynamicEvents(root){
       state.searchQuery = journalSearch.value;
       const results = document.getElementById("journalResults");
       if(results){ results.innerHTML = renderJournalResults(); bindDynamicEvents(results); }
+    });
+  }
+  const planSearch = root.querySelector("#planSearch");
+  if(planSearch && !planSearch._bound){
+    planSearch._bound = true;
+    planSearch.addEventListener("input", ()=>{
+      state.planSearchQuery = planSearch.value;
+      const results = document.getElementById("planListResults");
+      if(results){ results.innerHTML = renderPlanListRows(); bindDynamicEvents(results); }
+    });
+  }
+  const browseBookSearch = root.querySelector("#browseBookSearch");
+  if(browseBookSearch && !browseBookSearch._bound){
+    browseBookSearch._bound = true;
+    browseBookSearch.addEventListener("input", ()=>{
+      state.browseSearchQuery = browseBookSearch.value;
+      const results = document.getElementById("browseResults");
+      if(results){ results.innerHTML = renderBrowseBookList(); bindDynamicEvents(results); }
     });
   }
   bindSettingsEvents(root);
