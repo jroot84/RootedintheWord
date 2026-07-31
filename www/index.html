@@ -630,6 +630,22 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=
 async function saveFile(filename, content, mime){
   mime = mime || "application/octet-stream";
   const ext = "."+filename.split(".").pop();
+  // Try the share sheet first — on mobile this surfaces apps like OneDrive, Messages,
+  // and Google Drive as destinations, unlike the OS "Save As" file picker below, which
+  // only lists registered file-system providers (Drive, device storage) and skips
+  // apps like OneDrive that only work as share targets.
+  try{
+    if(navigator.canShare && typeof File !== "undefined"){
+      const file = new File([content], filename, {type:mime});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file]});
+        return true;
+      }
+    }
+  }catch(e){
+    if(e && e.name==="AbortError") return false; // person cancelled the share sheet — respect that
+    // otherwise fall through to the next strategy
+  }
   if(window.showSaveFilePicker){
     try{
       const handle = await window.showSaveFilePicker({
@@ -646,15 +662,6 @@ async function saveFile(filename, content, mime){
       // otherwise fall through to the next strategy
     }
   }
-  try{
-    if(navigator.canShare && typeof File !== "undefined"){
-      const file = new File([content], filename, {type:mime});
-      if(navigator.canShare({files:[file]})){
-        await navigator.share({files:[file]});
-        return true;
-      }
-    }
-  }catch(e){ /* cancelled or unsupported — fall through */ }
   const blob = content instanceof Blob ? content : new Blob([content], {type:mime});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -1876,7 +1883,7 @@ function renderSettingsData(){
       </div>
       <div class="set-row">
         <div><div class="lbl">Import backup</div><div class="desc">Restore from a previously exported file.</div></div>
-        <label class="btn sm" style="margin:0;">Import<input type="file" id="importInput" accept="application/json" style="display:none;"></label>
+        <label class="btn sm" style="margin:0;">Import<input type="file" id="importInput" accept=".txt,.json,text/plain,application/json" style="display:none;"></label>
       </div>
       <div class="set-row">
         <div><div class="lbl">Reset everything</div><div class="desc">Erase all app data from this device.</div></div>
@@ -1891,7 +1898,7 @@ function renderSettingsData(){
       </div>
       <div class="set-row">
         <div><div class="lbl">Import contacts</div><div class="desc">Add contacts from a file someone shared with you. Merges into your roster — nothing is overwritten.</div></div>
-        <label class="btn sm" style="margin:0;">Import<input type="file" id="importContactsInput" accept="application/json" style="display:none;"></label>
+        <label class="btn sm" style="margin:0;">Import<input type="file" id="importContactsInput" accept=".txt,.json,text/plain,application/json" style="display:none;"></label>
       </div>
     </div>
   `;
@@ -2733,7 +2740,7 @@ function bindGroupEvents(root){
     exportRosterBtn.addEventListener("click", async ()=>{
       if(!roster.length){ toast("Your roster is empty"); return; }
       const data = roster.map(p=>({name:p.name, phone:p.phone||"", email:p.email||""}));
-      await saveFile("rooted-in-the-word-contacts-"+fmtYMD(new Date())+".json", JSON.stringify(data, null, 2), "application/json");
+      await saveFile("rooted-in-the-word-contacts-"+fmtYMD(new Date())+".txt", JSON.stringify(data, null, 2), "text/plain");
     });
   }
   const shareRosterBtn = root.querySelector("#shareRosterBtn");
@@ -3043,7 +3050,7 @@ function bindSettingsEvents(root){
     exportBtn._bound = true;
     exportBtn.addEventListener("click", async ()=>{
       const json = JSON.stringify({startDate,progress,settings,highlights:phl,roster,events}, null, 2);
-      await saveFile("rooted-in-the-word-backup-"+fmtYMD(new Date())+".json", json, "application/json");
+      await saveFile("rooted-in-the-word-backup-"+fmtYMD(new Date())+".txt", json, "text/plain");
     });
   }
   const importInput = root.querySelector("#importInput");
@@ -3073,7 +3080,7 @@ function bindSettingsEvents(root){
     exportContactsBtn.addEventListener("click", async ()=>{
       if(!roster.length){ toast("Your roster is empty"); return; }
       const data = roster.map(p=>({name:p.name, phone:p.phone||"", email:p.email||""}));
-      await saveFile("rooted-in-the-word-contacts-"+fmtYMD(new Date())+".json", JSON.stringify(data, null, 2), "application/json");
+      await saveFile("rooted-in-the-word-contacts-"+fmtYMD(new Date())+".txt", JSON.stringify(data, null, 2), "text/plain");
     });
   }
   const importContactsInput = root.querySelector("#importContactsInput");
