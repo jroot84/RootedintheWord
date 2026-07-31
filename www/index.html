@@ -35,6 +35,16 @@ html[data-theme="dark"]{
   --shadow-sm:0 1px 2px rgba(0,0,0,.35); --shadow-md:0 14px 36px -14px rgba(0,0,0,.55);
   --scrim:rgba(0,0,0,.6);
 }
+/* Color themes — override the accent duo (ribbon/gold) used for the ribbon bar, hero edge, and gold accents.
+   "heritage" is the default and needs no override. */
+html[data-accent="forest"]{ --ribbon:#2F5233; --ribbon-2:#4A7856; --gold:#8B7A2E; --gold-2:#B5A34A; }
+html[data-theme="dark"][data-accent="forest"]{ --ribbon:#5B9169; --ribbon-2:#3E6B49; --gold:#D8C468; --gold-2:#8C7A33; }
+
+html[data-accent="midnight"]{ --ribbon:#2B3A67; --ribbon-2:#3F5389; --gold:#5E7AA8; --gold-2:#8AA4C9; }
+html[data-theme="dark"][data-accent="midnight"]{ --ribbon:#7C93D4; --ribbon-2:#455D96; --gold:#9FBBDD; --gold-2:#5E7AA8; }
+
+html[data-accent="terracotta"]{ --ribbon:#A5502F; --ribbon-2:#C97B52; --gold:#7C8F5E; --gold-2:#9DB088; }
+html[data-theme="dark"][data-accent="terracotta"]{ --ribbon:#D98B62; --ribbon-2:#A5502F; --gold:#A3B896; --gold-2:#7C8F5E; }
 *{box-sizing:border-box;}
 html,body{height:100%;}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);-webkit-font-smoothing:antialiased;transition:background .25s ease,color .25s ease;}
@@ -220,6 +230,10 @@ html[data-theme="dark"] .theme-opt button.sel, html[data-theme="dark"] .font-opt
 .field-actions{display:flex;gap:8px;margin-top:8px;}
 .about-block{font-size:12px;color:var(--ink-faint);line-height:1.6;padding:14px 2px;}
 .version-list{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.accent-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;}
+.accent-swatch{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:11px;border:1.5px solid var(--border-strong);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-soft);}
+.accent-swatch.sel{border-color:var(--ink);color:var(--ink);}
+.accent-swatch .dot{width:22px;height:22px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);}
 .version-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);}
 .version-row.sel{border-color:var(--gold);}
 .version-row .vname{font-weight:700;font-size:13.5px;}
@@ -249,6 +263,9 @@ html[data-theme="dark"] #readerText .verse.hl:hover{background:rgba(217,174,85,.
 .reader-status{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:14px;}
 .reader-status svg{width:30px;height:30px;color:var(--ink-faint);margin-bottom:10px;}
 .copyright-note{font-size:11px;color:var(--ink-faint);border-top:1px solid var(--border);margin-top:26px;padding-top:14px;line-height:1.6;}
+.reader-bottom-nav{display:flex;gap:10px;margin-top:20px;}
+.reader-bottom-nav .btn{flex:1;justify-content:center;padding:13px;font-size:14px;}
+.reader-bottom-nav .btn:disabled{opacity:.35;}
 .reader-version-select{border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);border-radius:9px;padding:6px 8px;font-size:12.5px;font-weight:600;}
 
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);z-index:90;opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none;}
@@ -399,7 +416,8 @@ const LS = {
 const K = { start:"rootedword.startDate", progress:"rootedword.progress", settings:"rootedword.settings", hl:"rootedword.highlights", roster:"rootedword.roster", events:"rootedword.events" };
 let startDate = LS.get(K.start, null);
 let progress  = LS.get(K.progress, {});
-let settings  = LS.get(K.settings, {theme:"system", fontSize:18, fontFamily:"serif", esvKey:"", bibleVersion:"esv", pace:"1yr"});
+let settings  = LS.get(K.settings, {theme:"system", accent:"heritage", fontSize:18, fontFamily:"serif", esvKey:"", bibleVersion:"esv", pace:"1yr"});
+settings.accent = settings.accent || "heritage";
 let phl       = LS.get(K.hl, {});
 let roster    = LS.get(K.roster, []); // [{id,name,phone,email}]
 let events    = LS.get(K.events, []); // [{id,title,date,time,location,notes,attendance:{personId:bool}}]
@@ -464,6 +482,7 @@ function applyTheme(){
   let t = settings.theme;
   if(t==="system") t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark":"light";
   document.documentElement.setAttribute("data-theme", t);
+  document.documentElement.setAttribute("data-accent", settings.accent||"heritage");
 }
 applyTheme();
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ if(settings.theme==="system") applyTheme(); });
@@ -753,7 +772,7 @@ function getAllHighlightEntries(){
   });
 }
 
-function renderJournal(){
+function renderJournalResults(){
   const q = state.searchQuery.trim().toLowerCase();
 
   let noteEntries = [];
@@ -796,9 +815,16 @@ function renderJournal(){
   if(hlEntries.length){
     hlBody = hlEntries.map(h=>{
       const v = VERSIONS[h.version];
-      return `<div class="plan-row" data-act="openreaderdirect" data-ref="${escapeHtml(h.ref)}" data-version="${h.version}">
-        <div class="pd-num"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--gold)"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg></div>
-        <div class="pd-body"><div class="pd-date">${v?v.label:h.version} · ${h.count} verse${h.count===1?'':'s'} highlighted</div><div class="pd-refs">${escapeHtml(h.ref)}</div></div>
+      return `<div class="journal-entry">
+        <div class="je-head" data-act="openreaderdirect" data-ref="${escapeHtml(h.ref)}" data-version="${h.version}" style="cursor:pointer;">
+          <span>${v?v.label:h.version} · ${h.count} verse${h.count===1?'':'s'} highlighted</span><span>${escapeHtml(h.ref)}</span>
+        </div>
+        <div class="je-actions">
+          <button class="btn sm ghost" data-act="sharehighlight" data-ref="${escapeHtml(h.ref)}" data-version="${h.version}">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>
+            Share
+          </button>
+        </div>
       </div>`;
     }).join("");
   } else if(q){
@@ -815,15 +841,21 @@ function renderJournal(){
   }
 
   return `
-    <div class="search-box">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-      <input type="text" id="journalSearch" placeholder="Search your notes and highlights…" value="${escapeHtml(state.searchQuery)}">
-    </div>
     <div class="section-title">Notes</div>
     ${notesBody}
     <div class="section-title">Highlights</div>
     ${hlBody || `<div class="empty-state" style="padding:16px;"><p>Verses you highlight while reading will show up here.</p></div>`}
     ${bmSection}
+  `;
+}
+
+function renderJournal(){
+  return `
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="journalSearch" placeholder="Search your notes and highlights…" value="${escapeHtml(state.searchQuery)}">
+    </div>
+    <div id="journalResults">${renderJournalResults()}</div>
   `;
 }
 
@@ -1204,6 +1236,16 @@ function renderSettings(){
           <button data-theme-opt="system" class="${settings.theme==='system'?'sel':''}">System</button>
         </div>
       </div>
+      <div class="set-row" style="display:block;">
+        <div class="lbl" style="margin-bottom:2px;">Color theme</div>
+        <div class="desc">Changes the accent color used throughout the app.</div>
+        <div class="accent-grid">
+          <button class="accent-swatch ${settings.accent==='heritage'?'sel':''}" data-accent-opt="heritage"><span class="dot" style="background:linear-gradient(135deg,#7C2B3F,#C79A3C);"></span>Heritage</button>
+          <button class="accent-swatch ${settings.accent==='forest'?'sel':''}" data-accent-opt="forest"><span class="dot" style="background:linear-gradient(135deg,#2F5233,#B5A34A);"></span>Forest</button>
+          <button class="accent-swatch ${settings.accent==='midnight'?'sel':''}" data-accent-opt="midnight"><span class="dot" style="background:linear-gradient(135deg,#2B3A67,#8AA4C9);"></span>Midnight</button>
+          <button class="accent-swatch ${settings.accent==='terracotta'?'sel':''}" data-accent-opt="terracotta"><span class="dot" style="background:linear-gradient(135deg,#A5502F,#9DB088);"></span>Terracotta</button>
+        </div>
+      </div>
       <div class="set-row">
         <div><div class="lbl">Reading font size</div></div>
         <div class="stepper"><button data-act="fontdown">–</button><span>${settings.fontSize}px</span><button data-act="fontup">+</button></div>
@@ -1379,6 +1421,16 @@ function openReader(day, ref){
         <div style="font-size:11.5px;color:var(--ink-faint);margin-bottom:10px;">Tap any verse to highlight it — tap again to remove.</div>
         <div id="readerText" class="${settings.fontFamily==='sans'?'f-sans':'f-serif'}" style="font-size:${settings.fontSize}px;"><div class="reader-status" id="readerStatus"><span>Loading…</span></div></div>
         <div class="copyright-note" id="readerCopyright"></div>
+        ${hasNav?`<div class="reader-bottom-nav">
+          <button class="btn ${atStart?'':'primary'}" id="readerPrevBottom" ${atStart?'disabled':''}>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>
+            Previous
+          </button>
+          <button class="btn primary" id="readerNextBottom" ${atEnd?'disabled':''}>
+            Next
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>`:""}
       </div>
     </div>
   </div>`;
@@ -1398,20 +1450,26 @@ function openReader(day, ref){
   if(notesBtn) notesBtn.onclick = ()=>{ openNoteModal(scheduleDayInfo(day).planDay, {day, ref}); };
 
   if(hasNav){
-    const prevBtn = document.getElementById("readerPrev");
-    const nextBtn = document.getElementById("readerNext");
-    if(prevBtn) prevBtn.onclick = ()=>{
+    const goPrev = ()=>{
       const refs = readingListForDay(day);
       const idx = refs.indexOf(ref);
       if(idx>0){ openReader(day, refs[idx-1]); }
       else if(day>1){ const prevRefs = readingListForDay(day-1); openReader(day-1, prevRefs[prevRefs.length-1]); }
     };
-    if(nextBtn) nextBtn.onclick = ()=>{
+    const goNext = ()=>{
       const refs = readingListForDay(day);
       const idx = refs.indexOf(ref);
       if(idx<refs.length-1){ openReader(day, refs[idx+1]); }
       else if(day<total){ const nextRefs = readingListForDay(day+1); openReader(day+1, nextRefs[0]); }
     };
+    const prevBtn = document.getElementById("readerPrev");
+    const nextBtn = document.getElementById("readerNext");
+    const prevBtnBottom = document.getElementById("readerPrevBottom");
+    const nextBtnBottom = document.getElementById("readerNextBottom");
+    if(prevBtn) prevBtn.onclick = goPrev;
+    if(nextBtn) nextBtn.onclick = goNext;
+    if(prevBtnBottom) prevBtnBottom.onclick = goPrev;
+    if(nextBtnBottom) nextBtnBottom.onclick = goNext;
   }
 
   loadPassage(ref);
@@ -1579,9 +1637,18 @@ function bindDynamicEvents(root){
         openNoteModal(day);
       } else if(act==="sharenote"){
         const e = getEntry(day);
-        state.shareDraft = `Day ${day} (${niceDateShort(dateForDay(day))}) — ${PLAN[day-1].join(", ")}\n\n${e.note}\n\n— shared from Rooted in the Word`;
-        state.tab = "group";
+        state.shareDraft = `Day ${day}${hasStarted()?" ("+niceDateShort(dateForDay(day))+")":""} — ${PLAN[day-1].join(", ")}\n\n${e.note}\n\n— shared from Rooted in the Word`;
+        state.tab = "group"; state.groupMode = "roster";
         renderShell();
+        openMessageModal();
+      } else if(act==="sharehighlight"){
+        const ref = el.dataset.ref, version = el.dataset.version;
+        const v = VERSIONS[version];
+        const count = (phl[version+"::"+ref]||[]).length;
+        state.shareDraft = `A passage worth reading: ${ref} (${v?v.label:version})${count?" — "+count+" verse"+(count===1?"":"s")+" highlighted":""}\n\n— shared from Rooted in the Word`;
+        state.tab = "group"; state.groupMode = "roster";
+        renderShell();
+        openMessageModal();
       } else if(act==="toggleroster"){
         const id = el.dataset.id;
         if(state.selectedRoster.has(id)) state.selectedRoster.delete(id); else state.selectedRoster.add(id);
@@ -1676,6 +1743,10 @@ function bindDynamicEvents(root){
     if(el._bound) return; el._bound=true;
     el.addEventListener("click", ()=>{ settings.theme = el.dataset.themeOpt; saveSettings(); applyTheme(); renderShell(); });
   });
+  root.querySelectorAll("[data-accent-opt]").forEach(el=>{
+    if(el._bound) return; el._bound=true;
+    el.addEventListener("click", ()=>{ settings.accent = el.dataset.accentOpt; saveSettings(); applyTheme(); renderShell(); });
+  });
   root.querySelectorAll("[data-font-opt]").forEach(el=>{
     if(el._bound) return; el._bound=true;
     el.addEventListener("click", ()=>{ settings.fontFamily = el.dataset.fontOpt; saveSettings(); renderShell(); });
@@ -1689,8 +1760,9 @@ function bindDynamicEvents(root){
   if(journalSearch && !journalSearch._bound){
     journalSearch._bound = true;
     journalSearch.addEventListener("input", ()=>{
-      state.searchQuery = journalSearch.value; renderShell();
-      setTimeout(()=>{ const j=document.getElementById("journalSearch"); if(j){ j.focus(); j.setSelectionRange(j.value.length,j.value.length);} },0);
+      state.searchQuery = journalSearch.value;
+      const results = document.getElementById("journalResults");
+      if(results){ results.innerHTML = renderJournalResults(); bindDynamicEvents(results); }
     });
   }
   bindSettingsEvents(root);
@@ -1941,7 +2013,7 @@ function bindSettingsEvents(root){
     resetAllBtn.addEventListener("click", ()=>{
       if(confirm("This permanently erases all app data on this device. Continue?")){
         Object.values(K).forEach(k=>localStorage.removeItem(k));
-        startDate=null; progress={}; settings={theme:"system",fontSize:18,fontFamily:"serif",esvKey:"",bibleVersion:"esv",pace:"1yr"}; phl={}; roster=[]; events=[]; state.selectedRoster=new Set();
+        startDate=null; progress={}; settings={theme:"system",accent:"heritage",fontSize:18,fontFamily:"serif",esvKey:"",bibleVersion:"esv",pace:"1yr"}; phl={}; roster=[]; events=[]; state.selectedRoster=new Set();
         applyTheme(); renderShell();
       }
     });
