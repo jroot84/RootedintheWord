@@ -578,6 +578,9 @@ const BOOK_CHAPTERS = {
   "1 tim":6,"2 tim":4,"titus":3,"phm":1,"heb":13,
   "jas":5,"1 pet":5,"2 pet":3,"1 jn":5,"2 jn":1,"3 jn":1,"jude":1,"rev":22
 };
+// Canonical OT->NT book order (object key order matches BOOK_MAP's declaration order) —
+// used to step across a book boundary when navigating chapter-to-chapter in Read/Browse.
+const BOOK_ORDER = Object.keys(BOOK_MAP);
 // Converts a BOOK_MAP abbreviation key ("1 sam", "ps", "sng") into the display form
 // used inside PLAN refs ("1 Sam", "Ps", "Sng") — i.e. capitalize each word except a
 // leading chapter-count numeral.
@@ -866,7 +869,7 @@ function renderPlan(){
   return `
     <div class="seg">
       <button data-planmode="list" class="${mode==='list'?'active':''}">List</button>
-      <button data-planmode="browse" class="${mode==='browse'?'active':''}">Browse</button>
+      <button data-planmode="browse" class="${mode==='browse'?'active':''}">Read</button>
       <button data-planmode="cal" class="${mode==='cal'?'active':''}">Calendar</button>
       <button data-planmode="missed" class="${mode==='missed'?'active':''}">Missed${missedCount()?` (${missedCount()})`:''}</button>
     </div>
@@ -2042,7 +2045,8 @@ function readingListForDay(day){
   return info.refIdx.map(i=>PLAN[info.planDay-1][i]);
 }
 
-function openReader(day, ref){
+function openReader(day, ref, opts){
+  opts = opts || {};
   closeXrefPanel();
   stopTtsPlayback();
   state.readerDay = day;
@@ -2065,23 +2069,32 @@ function openReader(day, ref){
       canMark = true;
     }
   }
+  // Chapter-to-chapter navigation for a free-browse (Read tab) reading — separate from
+  // hasNav above, which only applies to plan-day readings. Crosses book boundaries too.
+  const hasChapterNav = !hasNav && !!opts.book;
+  let chapAtStart = true, chapAtEnd = true;
+  if(hasChapterNav){
+    const bookIdx = BOOK_ORDER.indexOf(opts.book);
+    chapAtStart = opts.chapter<=1 && bookIdx<=0;
+    chapAtEnd = opts.chapter>=(BOOK_CHAPTERS[opts.book]||1) && bookIdx>=BOOK_ORDER.length-1;
+  }
 
   root.innerHTML = `<div class="modal-scrim" id="scrim">
     <div class="modal-sheet" style="max-width:680px;">
       <div class="modal-head">
-        ${hasNav?`<button class="icon-btn" id="readerPrev" ${atStart?'disabled':''} title="Previous reading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>`:'<span></span>'}
+        ${hasNav?`<button class="icon-btn" id="readerPrev" ${atStart?'disabled':''} title="Previous reading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>`
+          :hasChapterNav?`<button class="icon-btn" id="readerPrev" ${chapAtStart?'disabled':''} title="Previous chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>`
+          :'<span></span>'}
         <h3 style="flex:1;text-align:center;">${escapeHtml(ref)}</h3>
-        ${hasNav?`<button class="icon-btn" id="readerNext" ${atEnd?'disabled':''} title="Next reading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>`:''}
+        ${hasNav?`<button class="icon-btn" id="readerNext" ${atEnd?'disabled':''} title="Next reading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>`
+          :hasChapterNav?`<button class="icon-btn" id="readerNext" ${chapAtEnd?'disabled':''} title="Next chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>`
+          :''}
         <button class="icon-btn" id="closeReader" title="${hasBack?'Back':'Close'}">${hasBack
           ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>`
           : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>`}</button>
       </div>
       <div class="reader-toolbar">
         <select class="reader-version-select" id="readerVersionSelect">${versionOptions}</select>
-        <button class="icon-btn" id="fontDownR">A–</button>
-        <button class="icon-btn" id="fontUpR">A+</button>
-        <button class="btn sm ${settings.fontFamily==='serif'?'gold':''}" id="fontSerifR">Serif</button>
-        <button class="btn sm ${settings.fontFamily==='sans'?'gold':''}" id="fontSansR">Reading</button>
         <span style="flex:1"></span>
         <button class="btn sm" id="readerListenBtn" title="Listen to this reading"></button>
         ${hasNav?`<button class="icon-btn" id="readerNotesBtn" title="Notes for this reading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg></button>`:""}
@@ -2103,16 +2116,20 @@ function openReader(day, ref){
           <button class="btn navarrow" id="readerNextBottom" ${atEnd?'disabled':''} title="Next reading">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
           </button>
+        </div>`:hasChapterNav?`<div class="reader-bottom-nav">
+          <button class="btn navarrow" id="readerPrevBottom" ${chapAtStart?'disabled':''} title="Previous chapter">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <span style="flex:1"></span>
+          <button class="btn navarrow" id="readerNextBottom" ${chapAtEnd?'disabled':''} title="Next chapter">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
         </div>`:""}
       </div>
     </div>
   </div>`;
   document.getElementById("scrim").addEventListener("click", (e)=>{ if(e.target.id==="scrim") closeOrBackReader(); });
   document.getElementById("closeReader").onclick = closeOrBackReader;
-  document.getElementById("fontDownR").onclick = ()=>{ settings.fontSize=Math.max(14,settings.fontSize-2); saveSettings(); applyReaderFont(); };
-  document.getElementById("fontUpR").onclick = ()=>{ settings.fontSize=Math.min(32,settings.fontSize+2); saveSettings(); applyReaderFont(); };
-  document.getElementById("fontSerifR").onclick = ()=>{ settings.fontFamily="serif"; saveSettings(); applyReaderFont(); document.getElementById("fontSerifR").classList.add("gold"); document.getElementById("fontSansR").classList.remove("gold"); };
-  document.getElementById("fontSansR").onclick = ()=>{ settings.fontFamily="sans"; saveSettings(); applyReaderFont(); document.getElementById("fontSansR").classList.add("gold"); document.getElementById("fontSerifR").classList.remove("gold"); };
   document.getElementById("clearHlBtn").onclick = ()=>{
     const key = settings.bibleVersion+"::"+ref;
     delete phl[key]; saveHl();
@@ -2182,6 +2199,41 @@ function openReader(day, ref){
         closeModal();
       }
     };
+  } else if(hasChapterNav){
+    const goPrevChapter = ()=>{
+      let book = opts.book, chapter = opts.chapter;
+      if(chapter>1){ chapter -= 1; }
+      else {
+        const idx = BOOK_ORDER.indexOf(book);
+        if(idx<=0) return;
+        book = BOOK_ORDER[idx-1];
+        chapter = BOOK_CHAPTERS[book]||1;
+      }
+      state.browseBook = book;
+      state.readerStack = [];
+      openReader(0, abbrevDisplay(book)+" "+chapter, {book, chapter});
+    };
+    const goNextChapter = ()=>{
+      let book = opts.book, chapter = opts.chapter;
+      if(chapter<(BOOK_CHAPTERS[book]||1)){ chapter += 1; }
+      else {
+        const idx = BOOK_ORDER.indexOf(book);
+        if(idx>=BOOK_ORDER.length-1) return;
+        book = BOOK_ORDER[idx+1];
+        chapter = 1;
+      }
+      state.browseBook = book;
+      state.readerStack = [];
+      openReader(0, abbrevDisplay(book)+" "+chapter, {book, chapter});
+    };
+    const prevBtn = document.getElementById("readerPrev");
+    const nextBtn = document.getElementById("readerNext");
+    const prevBtnBottom = document.getElementById("readerPrevBottom");
+    const nextBtnBottom = document.getElementById("readerNextBottom");
+    if(prevBtn) prevBtn.onclick = goPrevChapter;
+    if(nextBtn) nextBtn.onclick = goNextChapter;
+    if(prevBtnBottom) prevBtnBottom.onclick = goPrevChapter;
+    if(nextBtnBottom) nextBtnBottom.onclick = goNextChapter;
   }
 
   loadPassage(ref);
@@ -2197,14 +2249,6 @@ function closeOrBackReader(){
     closeModal();
   }
 }
-function applyReaderFont(){
-  const el = document.getElementById("readerText");
-  if(!el) return;
-  el.style.fontSize = settings.fontSize+"px";
-  el.classList.toggle("f-serif", settings.fontFamily==="serif");
-  el.classList.toggle("f-sans", settings.fontFamily==="sans");
-}
-
 async function loadPassage(ref){
   const el = document.getElementById("readerText");
   const cr = document.getElementById("readerCopyright");
@@ -2910,9 +2954,10 @@ function bindDynamicEvents(root){
         state.browseBook = null;
         renderShell();
       } else if(act==="browsechapter"){
-        const ref = abbrevDisplay(el.dataset.book) + " " + el.dataset.chapter;
+        const book = el.dataset.book, chapter = parseInt(el.dataset.chapter,10);
+        const ref = abbrevDisplay(book) + " " + chapter;
         state.readerStack = [];
-        openReader(0, ref);
+        openReader(0, ref, {book, chapter});
       }
     });
   });
