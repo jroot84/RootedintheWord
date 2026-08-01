@@ -3030,11 +3030,11 @@ function bindDynamicEvents(root){
         saveEvents();
         navBack();
       } else if(act==="browsebook"){
+        navPush(()=>{ state.browseBook = null; renderShell(); });
         state.browseBook = el.dataset.book;
         renderShell();
       } else if(act==="browseback"){
-        state.browseBook = null;
-        renderShell();
+        navBack();
       } else if(act==="browsechapter"){
         const book = el.dataset.book, chapter = parseInt(el.dataset.chapter,10);
         const ref = abbrevDisplay(book) + " " + chapter;
