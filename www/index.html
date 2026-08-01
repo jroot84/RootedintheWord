@@ -591,7 +591,7 @@ const LS = {
 const K = { start:"rootedword.startDate", progress:"rootedword.progress", settings:"rootedword.settings", hl:"rootedword.highlights", roster:"rootedword.roster", events:"rootedword.events", seenSplash:"rootedword.seenSplash" };
 let startDate = LS.get(K.start, null);
 let progress  = LS.get(K.progress, {});
-let settings  = LS.get(K.settings, {theme:"system", accent:"heritage", fontSize:18, fontFamily:"serif", esvKey:"", nltKey:"", apiBibleKey:"", apiBibleNivId:"", bibleVersion:"esv", pace:"1yr", senderName:"", readAloudVoice:"am_michael"});
+let settings  = LS.get(K.settings, {theme:"system", accent:"heritage", fontSize:18, fontFamily:"serif", esvKey:"", nltKey:"", apiBibleKey:"", apiBibleNivId:"", bibleVersion:"esv", pace:"1yr", senderName:"", readAloudVoice:""});
 settings.accent = settings.accent || "heritage";
 let phl       = LS.get(K.hl, {});
 let roster    = LS.get(K.roster, []); // [{id,name,phone,email}]
@@ -1897,10 +1897,18 @@ function renderSettingsBible(){
       </div>
       <div class="key-row" style="border-top:1px solid var(--border);">
         <div class="lbl">Read-aloud voice</div>
-        <div class="desc">A free, on-device AI voice can read each reading aloud — verse numbers and cross-reference markers are always skipped. The voice downloads once (~90MB) the first time you tap Listen, then it's cached; nothing is sent to a server.</div>
-        <div class="theme-opt" style="margin-top:8px;">
-          ${Object.keys(TTS_VOICES).map(k=>`<button data-act="setvoice" data-voice="${k}" class="${(settings.readAloudVoice||'am_michael')===k?'sel':''}">${TTS_VOICES[k]}</button>`).join("")}
-        </div>
+        <div class="desc">Uses your device's own built-in voice to read each reading aloud — free, no download, works offline. Verse numbers and cross-reference markers are always skipped. Available voices depend on your phone/browser.</div>
+        ${ttsSupported() ? `
+        <select class="reader-version-select" id="voiceSelect" style="width:100%;margin-top:8px;padding:10px 12px;">
+          <option value="">Auto (best guess)</option>
+          ${getEnglishVoices().map(v=>{
+            const key = voiceKey(v);
+            const sel = settings.readAloudVoice===key;
+            return `<option value="${escapeHtml(key)}" ${sel?'selected':''}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`;
+          }).join("")}
+        </select>
+        <div class="field-actions"><button class="btn sm ghost" id="testVoiceBtn">Test voice</button></div>
+        ` : `<div class="desc">This browser doesn't support read-aloud.</div>`}
       </div>
       <div class="key-row" style="border-top:1px solid var(--border);">
         <div class="lbl">API.Bible key (for NIV)</div>
@@ -2256,89 +2264,42 @@ function renderVersesFromMemory(ref){
 }
 
 // ---- Read Aloud ----
-// Uses Kokoro (Apache-2.0, onnx-community/Kokoro-82M-v1.0-ONNX), a small open-source neural
-// voice model that runs entirely on-device via WebAssembly — no server, no account, no cost.
-// The model itself (~90MB) downloads once on first use and is cached by the browser after that.
-// IMPORTANT: model loading + generation run inside a Web Worker (a background thread), never on
-// the main thread — otherwise the heavy WASM inference locks up the whole UI while it's working.
-const TTS_VOICES = { am_michael:"Michael (US)", am_adam:"Adam (US)", bm_george:"George (UK)", bm_lewis:"Lewis (UK)" };
-let ttsEngineReady = false, ttsEngineLoading = null;
-let ttsWorker = null, ttsMsgId = 0;
-const ttsPending = new Map();
-const ttsState = { playing:false, paused:false, ref:null, chunks:[], chunkIndex:0, token:0, audioEl:null };
+// Uses the device's own built-in text-to-speech (Web Speech API) — free, no download, no
+// server, works offline. Voice quality/selection depends entirely on what the person's own
+// browser/OS ships with, so the picker below lists whatever is actually available on their device.
+const ttsState = { playing:false, ref:null, chunks:[], chunkIndex:0, token:0 };
 
-function getTtsAudioEl(){
-  if(!ttsState.audioEl){
-    const a = document.createElement("audio");
-    a.id = "ttsAudioEl";
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.addEventListener("ended", onTtsChunkEnded);
-    ttsState.audioEl = a;
+function ttsSupported(){ return typeof window!=="undefined" && "speechSynthesis" in window; }
+
+function voiceKey(v){ return v.voiceURI || (v.name+"|"+v.lang); }
+
+function getEnglishVoices(){
+  if(!ttsSupported()) return [];
+  const all = window.speechSynthesis.getVoices() || [];
+  const en = all.filter(v=>/^en/i.test(v.lang));
+  return (en.length ? en : all).sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+// Best-effort guess at a male-sounding voice, used only when the person hasn't picked one yet.
+const MALE_VOICE_HINTS = ["male","david","daniel","alex","fred","mark","guy","george","lewis","michael","ryan","tom","james"];
+function guessDefaultVoice(voices){
+  if(!voices.length) return null;
+  const hit = voices.find(v=>MALE_VOICE_HINTS.some(h=>v.name.toLowerCase().includes(h)));
+  return hit || voices[0];
+}
+
+function resolveSelectedVoice(){
+  const voices = getEnglishVoices();
+  if(!voices.length) return null;
+  if(settings.readAloudVoice){
+    const match = voices.find(v=>voiceKey(v)===settings.readAloudVoice);
+    if(match) return match;
   }
-  return ttsState.audioEl;
+  return guessDefaultVoice(voices);
 }
 
-const TTS_WORKER_SRC = `
-let tts = null;
-self.onmessage = async (e) => {
-  const { id, type, text, voice } = e.data;
-  if (type === "init") {
-    try {
-      const { KokoroTTS } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
-      tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype: "q8", device: "wasm" });
-      self.postMessage({ id, type: "ready" });
-    } catch (err) {
-      self.postMessage({ id, type: "error", message: (err && err.message) || String(err) });
-    }
-  } else if (type === "generate") {
-    try {
-      const audio = await tts.generate(text, { voice });
-      const blob = audio.toBlob();
-      const buf = await blob.arrayBuffer();
-      self.postMessage({ id, type: "audio", buffer: buf, mime: blob.type }, [buf]);
-    } catch (err) {
-      self.postMessage({ id, type: "error", message: (err && err.message) || String(err) });
-    }
-  }
-};
-`;
-
-function getTtsWorker(){
-  if(ttsWorker) return ttsWorker;
-  const blobUrl = URL.createObjectURL(new Blob([TTS_WORKER_SRC], {type:"application/javascript"}));
-  ttsWorker = new Worker(blobUrl, {type:"module"});
-  ttsWorker.onmessage = (e)=>{
-    const { id, type } = e.data;
-    const pending = ttsPending.get(id);
-    if(!pending) return;
-    ttsPending.delete(id);
-    if(type==="error") pending.reject(new Error(e.data.message||"Read-aloud worker error"));
-    else pending.resolve(e.data);
-  };
-  ttsWorker.onerror = (e)=>{
-    ttsPending.forEach(p=>p.reject(new Error(e.message||"Read-aloud worker crashed")));
-    ttsPending.clear();
-    ttsEngineReady = false; ttsWorker = null;
-  };
-  return ttsWorker;
-}
-
-function ttsWorkerCall(payload){
-  const worker = getTtsWorker();
-  const id = ++ttsMsgId;
-  return new Promise((resolve, reject)=>{
-    ttsPending.set(id, {resolve, reject});
-    worker.postMessage(Object.assign({id}, payload));
-  });
-}
-
-async function ensureTtsEngine(){
-  if(ttsEngineReady) return true;
-  if(ttsEngineLoading) return ttsEngineLoading;
-  ttsEngineLoading = ttsWorkerCall({type:"init"}).then(()=>{ ttsEngineReady = true; return true; });
-  try{ return await ttsEngineLoading; }
-  finally{ ttsEngineLoading = null; }
+if(ttsSupported()){
+  window.speechSynthesis.onvoiceschanged = ()=>{ if(state.tab==="settings") renderShell(); };
 }
 
 // Builds speakable chunks directly from the fetched verse data (v.text only) — never from the
@@ -2353,7 +2314,7 @@ function buildTtsChunksForRef(ref){
   verses.forEach(v=>{
     const t = (v.text||"").trim();
     if(!t) return;
-    if(cur && (cur.length + t.length + 1) > 350){ chunks.push(cur); cur = t; }
+    if(cur && (cur.length + t.length + 1) > 400){ chunks.push(cur); cur = t; }
     else cur = cur ? (cur+" "+t) : t;
   });
   if(cur) chunks.push(cur);
@@ -2362,79 +2323,54 @@ function buildTtsChunksForRef(ref){
 
 const TTS_ICONS = {
   idle: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9v6h4l5 5V4L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>`,
-  loading: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" style="animation:spin 1s linear infinite;"><path d="M12 3a9 9 0 1 0 9 9"/></svg>`,
   playing: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`
 };
 function setListenBtnState(mode){
   const btn = document.getElementById("readerListenBtn");
   if(!btn) return;
-  const icon = mode==="playing" ? TTS_ICONS.playing : mode==="loading" ? TTS_ICONS.loading : TTS_ICONS.idle;
-  const label = mode==="loading" ? "Loading voice…" : mode==="playing" ? "Listening" : mode==="paused" ? "Paused" : "Listen";
+  const icon = mode==="playing" ? TTS_ICONS.playing : TTS_ICONS.idle;
+  const label = mode==="playing" ? "Stop" : "Listen";
   btn.innerHTML = icon + `<span style="margin-left:5px;">${label}</span>`;
-  btn.classList.toggle("gold", mode==="playing"||mode==="paused");
+  btn.classList.toggle("gold", mode==="playing");
 }
 
-async function toggleTtsPlayback(ref){
-  const a = getTtsAudioEl();
-  if(ttsState.ref===ref && ttsState.playing && !ttsState.paused){
-    a.pause(); ttsState.paused = true; setListenBtnState("paused"); return;
-  }
-  if(ttsState.ref===ref && ttsState.paused){
-    a.play(); ttsState.paused = false; setListenBtnState("playing"); return;
-  }
-  await startTtsPlayback(ref);
+function toggleTtsPlayback(ref){
+  if(!ttsSupported()){ toast("Read-aloud isn't supported in this browser."); return; }
+  if(ttsState.playing && ttsState.ref===ref){ stopTtsPlayback(); return; }
+  startTtsPlayback(ref);
 }
 
-async function startTtsPlayback(ref){
+function startTtsPlayback(ref){
   stopTtsPlayback();
-  const myToken = ++ttsState.token;
   const chunks = buildTtsChunksForRef(ref);
   if(!chunks.length){ toast("Let the passage finish loading, then tap Listen again."); return; }
-  ttsState.ref = ref; ttsState.chunks = chunks; ttsState.chunkIndex = 0; ttsState.playing = true; ttsState.paused = false;
-  setListenBtnState("loading");
-  try{ await ensureTtsEngine(); }
-  catch(e){
-    if(myToken!==ttsState.token) return;
-    toast("Couldn't load the read-aloud voice — check your connection and try again.");
-    ttsState.playing = false; setListenBtnState("idle");
-    return;
-  }
-  if(myToken!==ttsState.token) return; // superseded — reader closed or passage changed mid-load
-  await playTtsChunk(myToken, 0);
+  const myToken = ++ttsState.token;
+  ttsState.ref = ref; ttsState.chunks = chunks; ttsState.chunkIndex = 0; ttsState.playing = true;
+  setListenBtnState("playing");
+  speakChunk(myToken, 0); // called synchronously (no await before it) so mobile Safari still treats this as a user gesture
 }
 
-async function playTtsChunk(token, idx){
+function speakChunk(token, idx){
   if(token!==ttsState.token) return;
   if(idx>=ttsState.chunks.length){ ttsState.playing=false; setListenBtnState("idle"); return; }
-  setListenBtnState(idx===0?"loading":"playing");
-  const voice = TTS_VOICES[settings.readAloudVoice] ? settings.readAloudVoice : "am_michael";
-  let result;
-  try{ result = await ttsWorkerCall({type:"generate", text: ttsState.chunks[idx], voice}); }
-  catch(e){
+  const utter = new SpeechSynthesisUtterance(ttsState.chunks[idx]);
+  const voice = resolveSelectedVoice();
+  if(voice) utter.voice = voice;
+  utter.rate = 0.95;
+  utter.onend = ()=>{ if(token===ttsState.token && ttsState.playing) speakChunk(token, idx+1); };
+  utter.onerror = ()=>{
     if(token!==ttsState.token) return;
-    toast("Read-aloud hit an error generating audio.");
+    toast("Read-aloud hit an error.");
     ttsState.playing=false; setListenBtnState("idle");
-    return;
-  }
-  if(token!==ttsState.token) return;
-  const blob = new Blob([result.buffer], {type: result.mime || "audio/wav"});
-  const url = URL.createObjectURL(blob);
-  const a = getTtsAudioEl();
-  a.src = url;
+  };
   ttsState.chunkIndex = idx;
-  a.play();
-  setListenBtnState("playing");
-}
-
-function onTtsChunkEnded(){
-  if(!ttsState.playing) return;
-  playTtsChunk(ttsState.token, ttsState.chunkIndex+1);
+  window.speechSynthesis.speak(utter);
 }
 
 function stopTtsPlayback(){
-  ttsState.token++; // invalidates any in-flight generation or scheduled continuation
-  ttsState.playing = false; ttsState.paused = false; ttsState.ref = null; ttsState.chunks = []; ttsState.chunkIndex = 0;
-  if(ttsState.audioEl){ ttsState.audioEl.pause(); ttsState.audioEl.removeAttribute("src"); }
+  ttsState.token++; // invalidates any pending onend continuation
+  ttsState.playing = false; ttsState.ref = null; ttsState.chunks = []; ttsState.chunkIndex = 0;
+  if(ttsSupported()) window.speechSynthesis.cancel();
   setListenBtnState("idle");
 }
 
@@ -2871,8 +2807,6 @@ function bindDynamicEvents(root){
         settings.fontSize = Math.max(14, settings.fontSize-2); saveSettings(); renderShell();
       } else if(act==="setversion"){
         settings.bibleVersion = el.dataset.version; saveSettings(); renderShell();
-      } else if(act==="setvoice"){
-        settings.readAloudVoice = el.dataset.voice; saveSettings(); renderShell();
       } else if(act==="beginplan"){
         switchToOnboarding();
       } else if(act==="opennotemodal"){
@@ -3377,6 +3311,24 @@ function bindSettingsEvents(root){
   bindKeyBlock(root, { saveId:"saveEsvKeyBtn", testId:"testEsvKeyBtn", inputId:"esvKeyInput", statusId:"esvKeyStatus", field:"esvKey", label:"ESV key", test:testEsvKey });
   bindKeyBlock(root, { saveId:"saveNltKeyBtn", testId:"testNltKeyBtn", inputId:"nltKeyInput", statusId:"nltKeyStatus", field:"nltKey", label:"NLT key", test:testNltKey });
   bindKeyBlock(root, { saveId:"saveApiBibleKeyBtn", testId:"testApiBibleKeyBtn", inputId:"apiBibleKeyInput", statusId:"apiBibleKeyStatus", field:"apiBibleKey", label:"API.Bible key", test:testApiBibleKey });
+  const voiceSelect = root.querySelector("#voiceSelect");
+  if(voiceSelect && !voiceSelect._bound){
+    voiceSelect._bound = true;
+    voiceSelect.addEventListener("change", ()=>{ settings.readAloudVoice = voiceSelect.value; saveSettings(); });
+  }
+  const testVoiceBtn = root.querySelector("#testVoiceBtn");
+  if(testVoiceBtn && !testVoiceBtn._bound){
+    testVoiceBtn._bound = true;
+    testVoiceBtn.addEventListener("click", ()=>{
+      if(!ttsSupported()) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance("Like a tree planted by streams of water.");
+      const voice = resolveSelectedVoice();
+      if(voice) utter.voice = voice;
+      utter.rate = 0.95;
+      window.speechSynthesis.speak(utter);
+    });
+  }
   const saveStartBtn = root.querySelector("#saveStartBtn");
   if(saveStartBtn && !saveStartBtn._bound){
     saveStartBtn._bound = true;
@@ -3479,7 +3431,7 @@ function bindSettingsEvents(root){
     resetAllBtn.addEventListener("click", ()=>{
       if(confirm("This permanently erases all app data on this device. Continue?")){
         Object.values(K).forEach(k=>localStorage.removeItem(k));
-        startDate=null; progress={}; settings={theme:"system",accent:"heritage",fontSize:18,fontFamily:"serif",esvKey:"",nltKey:"",apiBibleKey:"",apiBibleNivId:"",bibleVersion:"esv",pace:"1yr",readAloudVoice:"am_michael"}; phl={}; roster=[]; events=[]; state.selectedRoster=new Set();
+        startDate=null; progress={}; settings={theme:"system",accent:"heritage",fontSize:18,fontFamily:"serif",esvKey:"",nltKey:"",apiBibleKey:"",apiBibleNivId:"",bibleVersion:"esv",pace:"1yr",readAloudVoice:""}; phl={}; roster=[]; events=[]; state.selectedRoster=new Set();
         applyTheme(); renderShell();
       }
     });
