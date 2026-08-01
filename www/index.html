@@ -669,6 +669,62 @@ function applyTheme(){
 applyTheme();
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ if(settings.theme==="system") applyTheme(); });
 
+/* ---------- Back-button / swipe-back navigation ----------
+   navStack holds one "undo" function per level currently pushed onto the
+   browser's history. navPush() adds a level (going deeper: opening a modal,
+   drilling into a sub-view, or leaving the Today tab). navReplace() swaps the
+   undo for the CURRENT level without adding depth (used when one screen is
+   swapped for another at the same level). navBack() is what every in-app
+   close/X/chevron button calls — it just asks the browser to go back, and the
+   popstate handler below is the single place that actually undoes state, so
+   a hardware/gesture back does exactly what an in-app close button does.
+   Once navStack is empty (Today tab, nothing open), there's nothing left for
+   us to intercept, so the next back exits the app/page as normal. */
+let navStack = [];
+function navPush(undo){
+  navStack.push(undo);
+  history.pushState({navDepth: navStack.length}, "");
+}
+function navReplace(undo){
+  if(!navStack.length){ navPush(undo); return; }
+  navStack[navStack.length-1] = undo;
+  history.replaceState({navDepth: navStack.length}, "");
+}
+function navBack(){
+  if(navStack.length>0) history.back();
+}
+let pendingTabTarget = null;
+function applyTabSwitch(target){
+  state.groupMode = "hub"; state.settingsMode = "hub";
+  state.tab = target;
+  if(target !== "today"){
+    navPush(()=>{ state.tab="today"; state.groupMode="hub"; state.settingsMode="hub"; renderShell(); });
+  }
+  renderShell();
+}
+function goToTab(target){
+  if(target===state.tab && navStack.length===0) return;
+  if(navStack.length>0){
+    pendingTabTarget = target;
+    history.go(-navStack.length);
+  } else {
+    applyTabSwitch(target);
+  }
+}
+window.addEventListener("popstate", (e)=>{
+  const targetDepth = (e.state && typeof e.state.navDepth === "number") ? e.state.navDepth : 0;
+  while(navStack.length > targetDepth){
+    const undo = navStack.pop();
+    if(typeof undo === "function") undo();
+  }
+  if(pendingTabTarget){
+    const t = pendingTabTarget; pendingTabTarget = null;
+    applyTabSwitch(t);
+  } else {
+    renderShell();
+  }
+});
+
 // Saves a file via the OS "Save As" dialog when available, falling back to the share sheet
 // (so the person can pick "Save to Files") and finally to a plain download link.
 async function saveFile(filename, content, mime){
@@ -1398,9 +1454,10 @@ function openAddPersonModal(){
       </div>
     </div>
   </div>`;
-  document.getElementById("closeAddPersonModal").onclick = closeModal;
-  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+  document.getElementById("closeAddPersonModal").onclick = navBack;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") navBack(); });
   bindDynamicEvents(root);
+  navPush(closeModal);
 }
 
 /* ---------- Meetings ---------- */
@@ -1537,9 +1594,10 @@ function openCreateMeetingModal(){
       <div class="modal-body" id="createMeetingBody">${renderCreateMeetingForm()}</div>
     </div>
   </div>`;
-  document.getElementById("closeCreateMeetingModal").onclick = closeModal;
-  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+  document.getElementById("closeCreateMeetingModal").onclick = navBack;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") navBack(); });
   bindDynamicEvents(root);
+  navPush(closeModal);
 }
 
 function renderMeetingsCalendar(){
@@ -1623,7 +1681,8 @@ function buildICS(ev){
   ].filter(Boolean).join("\r\n");
 }
 
-function openEventModal(id){
+function openEventModal(id, navMode){
+  navMode = navMode || "push";
   state.viewingEventId = id;
   state.eventInviteSelected = new Set();
   state.eventDetailMode = null;
@@ -1637,10 +1696,12 @@ function openEventModal(id){
       <div class="modal-body" id="eventModalBody">${renderEventDetail(id)}</div>
     </div>
   </div>`;
-  document.getElementById("closeEventModal").onclick = closeModal;
-  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+  document.getElementById("closeEventModal").onclick = navBack;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") navBack(); });
   bindDynamicEvents(root);
   wireShareIcsBtn();
+  if(navMode==="push") navPush(closeModal);
+  else if(navMode==="replace") navReplace(closeModal);
 }
 
 function renderEventDetail(id){
@@ -1997,7 +2058,6 @@ function renderSettingsAbout(){
 function openNoteModal(planDay, returnTo){
   const root = document.getElementById("modalRoot");
   const e = getEntry(planDay);
-  const closeFn = returnTo ? (()=>{ openReader(returnTo.day, returnTo.ref); }) : closeModal;
   root.innerHTML = `<div class="modal-scrim" id="scrim">
     <div class="modal-sheet">
       <div class="modal-head">
@@ -2010,11 +2070,12 @@ function openNoteModal(planDay, returnTo){
       </div>
     </div>
   </div>`;
-  document.getElementById("closeNoteModal").onclick = closeFn;
-  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeFn(); });
+  document.getElementById("closeNoteModal").onclick = navBack;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") navBack(); });
   const ta = document.getElementById("fullNoteTextarea");
   ta.addEventListener("input", ()=>{ setEntry(planDay, {note: ta.value}); });
   ta.focus();
+  navPush(returnTo ? (()=>{ openReader(returnTo.day, returnTo.ref, undefined, "noop"); }) : closeModal);
 }
 
 function openDayModal(n){
@@ -2029,15 +2090,21 @@ function openDayModal(n){
       <div class="modal-body" id="dayModalBody">${renderDayCard(n, {suppressScheduleNote:true})}</div>
     </div>
   </div>`;
-  document.getElementById("closeDayModal").onclick = closeModal;
-  document.getElementById("scrim").addEventListener("click", (e)=>{ if(e.target.id==="scrim") closeModal(); });
+  document.getElementById("closeDayModal").onclick = navBack;
+  document.getElementById("scrim").addEventListener("click", (e)=>{ if(e.target.id==="scrim") navBack(); });
   bindDynamicEvents(root);
+  navPush(closeModal);
 }
-function closeModal(){
+function teardownModal(){
   state.viewingDay=null; state.viewingEventId=null; state.editingEventId=null; state.messageModalOpen=false;
   state.eventDetailMode=null; state.createInvitePickerOpen=false; state.readerStack=[];
+  state.readerDay=null; state.readerRef=null; state.readerOpts=null;
   stopTtsPlayback();
-  document.getElementById("modalRoot").innerHTML=""; closeXrefPanel(); renderShell();
+  document.getElementById("modalRoot").innerHTML=""; closeXrefPanel();
+}
+function closeModal(){
+  teardownModal();
+  renderShell();
 }
 
 function readingListForDay(day){
@@ -2045,11 +2112,14 @@ function readingListForDay(day){
   return info.refIdx.map(i=>PLAN[info.planDay-1][i]);
 }
 
-function openReader(day, ref, opts){
+function openReader(day, ref, opts, navMode){
   opts = opts || {};
+  navMode = navMode || "push";
+  const prevReaderRef = state.readerRef, prevReaderDay = state.readerDay, prevReaderOpts = state.readerOpts;
+  const hadReaderOpen = prevReaderRef!=null;
   closeXrefPanel();
   stopTtsPlayback();
-  state.readerDay = day;
+  state.readerDay = day; state.readerRef = ref; state.readerOpts = opts;
   const root = document.getElementById("modalRoot");
   const versionOptions = VERSION_ORDER.map(c=>`<option value="${c}" ${settings.bibleVersion===c?'selected':''}>${VERSIONS[c].label}</option>`).join("");
 
@@ -2128,8 +2198,8 @@ function openReader(day, ref, opts){
       </div>
     </div>
   </div>`;
-  document.getElementById("scrim").addEventListener("click", (e)=>{ if(e.target.id==="scrim") closeOrBackReader(); });
-  document.getElementById("closeReader").onclick = closeOrBackReader;
+  document.getElementById("scrim").addEventListener("click", (e)=>{ if(e.target.id==="scrim") navBack(); });
+  document.getElementById("closeReader").onclick = navBack;
   document.getElementById("clearHlBtn").onclick = ()=>{
     const key = settings.bibleVersion+"::"+ref;
     delete phl[key]; saveHl();
@@ -2146,15 +2216,15 @@ function openReader(day, ref, opts){
       state.readerStack = [];
       const refs = readingListForDay(day);
       const idx = refs.indexOf(ref);
-      if(idx>0){ openReader(day, refs[idx-1]); }
-      else if(day>1){ const prevRefs = readingListForDay(day-1); openReader(day-1, prevRefs[prevRefs.length-1]); }
+      if(idx>0){ openReader(day, refs[idx-1], undefined, "noop"); }
+      else if(day>1){ const prevRefs = readingListForDay(day-1); openReader(day-1, prevRefs[prevRefs.length-1], undefined, "noop"); }
     };
     const goNext = ()=>{
       state.readerStack = [];
       const refs = readingListForDay(day);
       const idx = refs.indexOf(ref);
-      if(idx<refs.length-1){ openReader(day, refs[idx+1]); }
-      else if(day<total){ const nextRefs = readingListForDay(day+1); openReader(day+1, nextRefs[0]); }
+      if(idx<refs.length-1){ openReader(day, refs[idx+1], undefined, "noop"); }
+      else if(day<total){ const nextRefs = readingListForDay(day+1); openReader(day+1, nextRefs[0], undefined, "noop"); }
     };
     const prevBtn = document.getElementById("readerPrev");
     const nextBtn = document.getElementById("readerNext");
@@ -2178,7 +2248,7 @@ function openReader(day, ref, opts){
       if(wasDone){
         // Un-marking — just refresh this same reading in place.
         renderShell();
-        openReader(day, ref);
+        openReader(day, ref, undefined, "noop");
         return;
       }
 
@@ -2187,16 +2257,16 @@ function openReader(day, ref, opts){
       const nowAllDone = info.keys.every(k=>getEntry(info.planDay)[k]);
       if(nowAllDone){
         toast("Day complete!");
-        closeModal();
+        navBack();
       } else if(idx<refs.length-1){
         state.readerStack = [];
-        openReader(day, refs[idx+1]);
+        openReader(day, refs[idx+1], undefined, "noop");
       } else if(day<total){
         state.readerStack = [];
         const nextRefs = readingListForDay(day+1);
-        openReader(day+1, nextRefs[0]);
+        openReader(day+1, nextRefs[0], undefined, "noop");
       } else {
-        closeModal();
+        navBack();
       }
     };
   } else if(hasChapterNav){
@@ -2211,7 +2281,7 @@ function openReader(day, ref, opts){
       }
       state.browseBook = book;
       state.readerStack = [];
-      openReader(0, abbrevDisplay(book)+" "+chapter, {book, chapter});
+      openReader(0, abbrevDisplay(book)+" "+chapter, {book, chapter}, "noop");
     };
     const goNextChapter = ()=>{
       let book = opts.book, chapter = opts.chapter;
@@ -2224,7 +2294,7 @@ function openReader(day, ref, opts){
       }
       state.browseBook = book;
       state.readerStack = [];
-      openReader(0, abbrevDisplay(book)+" "+chapter, {book, chapter});
+      openReader(0, abbrevDisplay(book)+" "+chapter, {book, chapter}, "noop");
     };
     const prevBtn = document.getElementById("readerPrev");
     const nextBtn = document.getElementById("readerNext");
@@ -2238,9 +2308,18 @@ function openReader(day, ref, opts){
 
   loadPassage(ref);
   setupVerseTapToHighlight(ref);
+
+  if(navMode==="push"){
+    // Following a cross-reference deeper into the reader: back should return to
+    // the exact reading you jumped from, not close the reader outright.
+    navPush(hadReaderOpen ? (()=>{ openReader(prevReaderDay, prevReaderRef, prevReaderOpts, "noop"); }) : closeModal);
+  } else if(navMode==="replace"){
+    navReplace(hadReaderOpen ? (()=>{ openReader(prevReaderDay, prevReaderRef, prevReaderOpts, "noop"); }) : closeModal);
+  }
+  // navMode "noop" (paging prev/next, chapter nav, mark-complete-advance, or a
+  // popstate-driven restore) intentionally leaves the history stack untouched.
 }
-// Closes the reader, unless the person navigated here via a cross-reference tap —
-// in that case, step back to exactly the reading (day + ref) they were on before.
+// Kept for reference; back/close now goes through navBack() -> the nav stack above.
 function closeOrBackReader(){
   if(state.readerStack && state.readerStack.length){
     const prev = state.readerStack.pop();
@@ -2522,16 +2601,17 @@ function openXrefPanel(fromLabel, list){
       </div>
     </div>
   </div>`;
-  document.getElementById("xrefScrim").addEventListener("click",(e)=>{ if(e.target.id==="xrefScrim") closeXrefPanel(); });
-  document.getElementById("closeXrefPanel").onclick = closeXrefPanel;
+  document.getElementById("xrefScrim").addEventListener("click",(e)=>{ if(e.target.id==="xrefScrim") navBack(); });
+  document.getElementById("closeXrefPanel").onclick = navBack;
   root.querySelectorAll(".xref-row").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const r = btn.dataset.ref;
       closeXrefPanel();
       state.readerStack.push({day: state.readerDay, ref: state.readerRef});
-      openReader(0, r);
+      openReader(0, r, undefined, "replace");
     });
   });
+  navPush(closeXrefPanel);
 }
 function closeXrefPanel(){
   const root = document.getElementById("xrefPanelRoot");
@@ -2858,7 +2938,8 @@ function bindDynamicEvents(root){
       } else if(act==="sharenote"){
         const e = getEntry(day);
         state.shareDraft = `Day ${day}${hasStarted()?" ("+niceDateShort(dateForDay(day))+")":""} — ${PLAN[day-1].join(", ")}\n\n${e.note}\n\n— ${settings.senderName||"shared from Rooted in the Word"}`;
-        closeModal();
+        teardownModal();
+        navReplace(()=>{ state.tab="today"; state.groupMode="hub"; renderShell(); });
         state.tab = "group"; state.groupMode = "message";
         renderShell();
       } else if(act==="sharehighlight"){
@@ -2866,7 +2947,8 @@ function bindDynamicEvents(root){
         const v = VERSIONS[version];
         const count = (phl[version+"::"+ref]||[]).length;
         state.shareDraft = `A passage worth reading: ${ref} (${v?v.label:version})${count?" — "+count+" verse"+(count===1?"":"s")+" highlighted":""}\n\n— ${settings.senderName||"shared from Rooted in the Word"}`;
-        closeModal();
+        teardownModal();
+        navReplace(()=>{ state.tab="today"; state.groupMode="hub"; renderShell(); });
         state.tab = "group"; state.groupMode = "message";
         renderShell();
       } else if(act==="toggleroster"){
@@ -2946,7 +3028,7 @@ function bindDynamicEvents(root){
       } else if(act==="deleteevent"){
         events = events.filter(x=>x.id!==el.dataset.id);
         saveEvents();
-        closeModal();
+        navBack();
       } else if(act==="browsebook"){
         state.browseBook = el.dataset.book;
         renderShell();
@@ -2984,11 +3066,21 @@ function bindDynamicEvents(root){
   });
   root.querySelectorAll("[data-groupmode]").forEach(el=>{
     if(el._bound) return; el._bound=true;
-    el.addEventListener("click", ()=>{ state.groupMode = el.dataset.groupmode; renderShell(); });
+    el.addEventListener("click", ()=>{
+      const target = el.dataset.groupmode;
+      if(target==="hub"){ navBack(); return; }
+      navPush(()=>{ state.groupMode="hub"; renderShell(); });
+      state.groupMode = target; renderShell();
+    });
   });
   root.querySelectorAll("[data-settingsmode]").forEach(el=>{
     if(el._bound) return; el._bound=true;
-    el.addEventListener("click", ()=>{ state.settingsMode = el.dataset.settingsmode; renderShell(); });
+    el.addEventListener("click", ()=>{
+      const target = el.dataset.settingsmode;
+      if(target==="hub"){ navBack(); return; }
+      navPush(()=>{ state.settingsMode="hub"; renderShell(); });
+      state.settingsMode = target; renderShell();
+    });
   });
   root.querySelectorAll("[data-meetingsmode]").forEach(el=>{
     if(el._bound) return; el._bound=true;
@@ -3049,7 +3141,10 @@ function bindGroupEvents(root){
   const goMsgBtn = root.querySelector("#goMessageBtn");
   if(goMsgBtn && !goMsgBtn._bound){
     goMsgBtn._bound = true;
-    goMsgBtn.addEventListener("click", ()=>{ state.groupMode = "message"; renderShell(); });
+    goMsgBtn.addEventListener("click", ()=>{
+      navReplace(()=>{ state.groupMode="hub"; renderShell(); });
+      state.groupMode = "message"; renderShell();
+    });
   }
 
   const exportRosterBtn = root.querySelector("#exportRosterBtn");
@@ -3087,7 +3182,7 @@ function bindGroupEvents(root){
       const email = root.querySelector("#newPersonEmail").value.trim();
       if(!name){ toast("Add a name first"); return; }
       roster.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), name, phone, email });
-      saveRoster(); toast("Added to roster"); closeModal();
+      saveRoster(); toast("Added to roster"); navBack();
     });
   }
   const selAllBtn = root.querySelector("#selectAllRosterBtn");
@@ -3194,9 +3289,9 @@ function bindGroupEvents(root){
       saveEvents();
       toast("Meeting scheduled");
       const invited = new Set(state.eventInviteSelected);
-      closeModal();
+      teardownModal();
       state.groupMode = "meetings";
-      openEventModal(id);
+      openEventModal(id, "replace");
       if(invited.size){ state.eventInviteSelected = invited; state.eventDetailMode = "invite"; rerenderEventModal(); }
     });
   }
@@ -3271,9 +3366,10 @@ function openDateEventsModal(dateKey){
       </div>
     </div>
   </div>`;
-  document.getElementById("closeDatePicker").onclick = closeModal;
-  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+  document.getElementById("closeDatePicker").onclick = navBack;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") navBack(); });
   bindDynamicEvents(root);
+  navPush(closeModal);
 }
 function openStatsModal(){
   const root = document.getElementById("modalRoot");
@@ -3292,8 +3388,9 @@ function openStatsModal(){
       </div>
     </div>
   </div>`;
-  document.getElementById("closeStatsModal").onclick = closeModal;
-  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") closeModal(); });
+  document.getElementById("closeStatsModal").onclick = navBack;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") navBack(); });
+  navPush(closeModal);
 }
 
 function renderTodayPinned(n){
@@ -3522,9 +3619,7 @@ function bindSettingsEvents(root){
 
 document.querySelectorAll("nav.tabbar button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
-    state.tab = btn.dataset.tab;
-    state.viewingDay = null;
-    renderShell();
+    goToTab(btn.dataset.tab);
   });
 });
 
