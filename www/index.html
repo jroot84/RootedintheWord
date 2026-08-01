@@ -2259,8 +2259,12 @@ function renderVersesFromMemory(ref){
 // Uses Kokoro (Apache-2.0, onnx-community/Kokoro-82M-v1.0-ONNX), a small open-source neural
 // voice model that runs entirely on-device via WebAssembly — no server, no account, no cost.
 // The model itself (~90MB) downloads once on first use and is cached by the browser after that.
+// IMPORTANT: model loading + generation run inside a Web Worker (a background thread), never on
+// the main thread — otherwise the heavy WASM inference locks up the whole UI while it's working.
 const TTS_VOICES = { am_michael:"Michael (US)", am_adam:"Adam (US)", bm_george:"George (UK)", bm_lewis:"Lewis (UK)" };
-let ttsEngine = null, ttsEngineLoading = null;
+let ttsEngineReady = false, ttsEngineLoading = null;
+let ttsWorker = null, ttsMsgId = 0;
+const ttsPending = new Map();
 const ttsState = { playing:false, paused:false, ref:null, chunks:[], chunkIndex:0, token:0, audioEl:null };
 
 function getTtsAudioEl(){
@@ -2275,15 +2279,64 @@ function getTtsAudioEl(){
   return ttsState.audioEl;
 }
 
+const TTS_WORKER_SRC = `
+let tts = null;
+self.onmessage = async (e) => {
+  const { id, type, text, voice } = e.data;
+  if (type === "init") {
+    try {
+      const { KokoroTTS } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
+      tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype: "q8", device: "wasm" });
+      self.postMessage({ id, type: "ready" });
+    } catch (err) {
+      self.postMessage({ id, type: "error", message: (err && err.message) || String(err) });
+    }
+  } else if (type === "generate") {
+    try {
+      const audio = await tts.generate(text, { voice });
+      const blob = audio.toBlob();
+      const buf = await blob.arrayBuffer();
+      self.postMessage({ id, type: "audio", buffer: buf, mime: blob.type }, [buf]);
+    } catch (err) {
+      self.postMessage({ id, type: "error", message: (err && err.message) || String(err) });
+    }
+  }
+};
+`;
+
+function getTtsWorker(){
+  if(ttsWorker) return ttsWorker;
+  const blobUrl = URL.createObjectURL(new Blob([TTS_WORKER_SRC], {type:"application/javascript"}));
+  ttsWorker = new Worker(blobUrl, {type:"module"});
+  ttsWorker.onmessage = (e)=>{
+    const { id, type } = e.data;
+    const pending = ttsPending.get(id);
+    if(!pending) return;
+    ttsPending.delete(id);
+    if(type==="error") pending.reject(new Error(e.data.message||"Read-aloud worker error"));
+    else pending.resolve(e.data);
+  };
+  ttsWorker.onerror = (e)=>{
+    ttsPending.forEach(p=>p.reject(new Error(e.message||"Read-aloud worker crashed")));
+    ttsPending.clear();
+    ttsEngineReady = false; ttsWorker = null;
+  };
+  return ttsWorker;
+}
+
+function ttsWorkerCall(payload){
+  const worker = getTtsWorker();
+  const id = ++ttsMsgId;
+  return new Promise((resolve, reject)=>{
+    ttsPending.set(id, {resolve, reject});
+    worker.postMessage(Object.assign({id}, payload));
+  });
+}
+
 async function ensureTtsEngine(){
-  if(ttsEngine) return ttsEngine;
+  if(ttsEngineReady) return true;
   if(ttsEngineLoading) return ttsEngineLoading;
-  ttsEngineLoading = (async ()=>{
-    const { KokoroTTS } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
-    const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype:"q8", device:"wasm" });
-    ttsEngine = tts;
-    return tts;
-  })();
+  ttsEngineLoading = ttsWorkerCall({type:"init"}).then(()=>{ ttsEngineReady = true; return true; });
   try{ return await ttsEngineLoading; }
   finally{ ttsEngineLoading = null; }
 }
@@ -2355,8 +2408,8 @@ async function playTtsChunk(token, idx){
   if(idx>=ttsState.chunks.length){ ttsState.playing=false; setListenBtnState("idle"); return; }
   setListenBtnState(idx===0?"loading":"playing");
   const voice = TTS_VOICES[settings.readAloudVoice] ? settings.readAloudVoice : "am_michael";
-  let audio;
-  try{ audio = await ttsEngine.generate(ttsState.chunks[idx], {voice}); }
+  let result;
+  try{ result = await ttsWorkerCall({type:"generate", text: ttsState.chunks[idx], voice}); }
   catch(e){
     if(token!==ttsState.token) return;
     toast("Read-aloud hit an error generating audio.");
@@ -2364,7 +2417,8 @@ async function playTtsChunk(token, idx){
     return;
   }
   if(token!==ttsState.token) return;
-  const url = URL.createObjectURL(audio.toBlob());
+  const blob = new Blob([result.buffer], {type: result.mime || "audio/wav"});
+  const url = URL.createObjectURL(blob);
   const a = getTtsAudioEl();
   a.src = url;
   ttsState.chunkIndex = idx;
