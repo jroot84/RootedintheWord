@@ -379,6 +379,7 @@ html[data-theme="dark"] #readerText .verse.hl:hover{background:rgba(217,174,85,.
 .xref-row{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:12px 13px;margin-bottom:7px;font-size:14px;font-weight:700;color:var(--ink);}
 .xref-row:active{transform:translateY(1px);}
 .xref-row .xr-votes{font-size:11px;font-weight:600;color:var(--ink-faint);white-space:nowrap;}
+.xref-row .xr-topic{font-size:11px;font-weight:600;color:var(--gold);white-space:nowrap;background:var(--surface-2);padding:3px 9px;border-radius:999px;}
 .xref-hint{font-size:11.5px;color:var(--ink-faint);margin-bottom:4px;}
 .reader-status{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:14px;}
 .reader-status svg{width:30px;height:30px;color:var(--ink-faint);margin-bottom:10px;}
@@ -2242,6 +2243,25 @@ function xrefBookSlug(ref){
   if(!m) return null;
   return m[1].toLowerCase().replace(/\s+/g,"");
 }
+// Canonical (Bible-order) sort for a list of cross references. BOOK_MAP is already
+// declared key-by-key in canonical order (Genesis...Revelation), so its key order
+// doubles as the book ranking; ties break on chapter then verse.
+const BOOK_CANON_ORDER = Object.keys(BOOK_MAP);
+function parseRefForSort(ref){
+  const m = ref.match(/^((?:[1-3]\s)?[A-Za-z]+)\s+(\d+):(\d+)/);
+  if(!m) return {order:999, chap:0, verse:0};
+  const key = m[1].toLowerCase().trim();
+  const order = BOOK_CANON_ORDER.indexOf(key);
+  return { order: order===-1?999:order, chap: parseInt(m[2],10)||0, verse: parseInt(m[3],10)||0 };
+}
+function sortRefsCanonically(list){
+  return list.slice().sort((a,b)=>{
+    const pa = parseRefForSort(a[0]), pb = parseRefForSort(b[0]);
+    if(pa.order!==pb.order) return pa.order-pb.order;
+    if(pa.chap!==pb.chap) return pa.chap-pb.chap;
+    return pa.verse-pb.verse;
+  });
+}
 function extractVerseNum(label){
   if(!label) return 0;
   const parts = String(label).split(":");
@@ -2302,8 +2322,9 @@ function fullVerseLabel(ref, cv){
 }
 function openXrefPanel(fromLabel, list){
   const root = document.getElementById("xrefPanelRoot");
-  const rows = list.map(([r,votes])=>
-    `<button class="xref-row" data-ref="${escapeHtml(r)}"><span>${escapeHtml(r)}</span></button>`
+  const sorted = sortRefsCanonically(list);
+  const rows = sorted.map(([r,votes,topic])=>
+    `<button class="xref-row" data-ref="${escapeHtml(r)}"><span>${escapeHtml(r)}</span>${topic?`<span class="xr-topic">${escapeHtml(topic)}</span>`:""}</button>`
   ).join("");
   root.innerHTML = `<div class="modal-scrim" id="xrefScrim" style="z-index:60;">
     <div class="modal-sheet" style="max-width:480px;">
