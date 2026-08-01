@@ -216,7 +216,7 @@ html[data-theme="dark"] .btn.primary{background:var(--gold);color:#1D1C24;border
 .day-begin.done{background:var(--green);border-color:var(--green);}
 html[data-theme="dark"] .day-begin.done{color:#0F1220;}
 .notes-eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:12px;}
-.notes-textarea{width:100%;min-height:180px;resize:vertical;border-radius:14px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:16px;font-size:15px;line-height:1.6;font-family:var(--ui);}
+.notes-textarea{width:100%;min-height:180px;resize:none;overflow:hidden;border-radius:14px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:16px;font-size:15px;line-height:1.6;font-family:var(--ui);}
 
 .reading-row{display:flex;align-items:flex-start;gap:12px;padding:12px 4px;border-top:1px solid var(--border);}
 .reading-row:first-of-type{border-top:none;}
@@ -2757,9 +2757,12 @@ function bindDynamicEvents(root){
   });
   root.querySelectorAll("textarea[data-act='note']").forEach(ta=>{
     if(ta._noteBound) return; ta._noteBound = true;
+    const autoSize = ()=>{ ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px"; };
+    autoSize();
     ta.addEventListener("input", ()=>{
       const day = parseInt(ta.dataset.day,10);
       setEntry(day, {note: ta.value});
+      autoSize();
     });
   });
   root.querySelectorAll("textarea[data-act='eventminutes']").forEach(ta=>{
