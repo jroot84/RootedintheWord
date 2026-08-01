@@ -111,7 +111,7 @@ html[data-theme="dark"][data-accent="harvest"]{
 *{box-sizing:border-box;}
 html,body{height:100%;}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);-webkit-font-smoothing:antialiased;transition:background .25s ease,color .25s ease;}
-button{font-family:inherit;cursor:pointer;}
+button{font-family:inherit;cursor:pointer;color:inherit;}
 input,textarea,select{font-family:inherit;}
 @media (max-width:640px){
   input,select,textarea{font-size:16px !important;}
@@ -344,7 +344,8 @@ html[data-theme="dark"] .theme-opt button.sel, html[data-theme="dark"] .font-opt
 .about-block{font-size:12px;color:var(--ink-faint);line-height:1.6;padding:14px 2px;}
 .version-list{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
 .accent-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;}
-.accent-swatch{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:11px;border:1.5px solid var(--border-strong);font-size:12.5px;font-weight:600;color:#4A4636;}
+.accent-swatch{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:11px;border:1.5px solid var(--border-strong);font-size:12.5px;font-weight:600;color:#4A4636;background:var(--swatch-light);}
+html[data-theme="dark"] .accent-swatch{color:var(--swatch-dark-ink);background:var(--swatch-dark);}
 .accent-swatch.sel{border-color:var(--gold);border-width:2px;box-shadow:0 0 0 1px var(--gold);}
 .accent-swatch .dot{width:22px;height:22px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);}
 .version-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);}
@@ -403,6 +404,7 @@ html[data-theme="dark"] .reader-bottom-nav .markcomplete.done{background:var(--g
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);z-index:90;opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
 
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 @media(max-width:400px){.stats-grid{grid-template-columns:repeat(3,1fr);} .day-title{font-size:22px;}}
 </style>
 </head>
@@ -589,7 +591,7 @@ const LS = {
 const K = { start:"rootedword.startDate", progress:"rootedword.progress", settings:"rootedword.settings", hl:"rootedword.highlights", roster:"rootedword.roster", events:"rootedword.events", seenSplash:"rootedword.seenSplash" };
 let startDate = LS.get(K.start, null);
 let progress  = LS.get(K.progress, {});
-let settings  = LS.get(K.settings, {theme:"system", accent:"heritage", fontSize:18, fontFamily:"serif", esvKey:"", nltKey:"", apiBibleKey:"", apiBibleNivId:"", bibleVersion:"esv", pace:"1yr", senderName:""});
+let settings  = LS.get(K.settings, {theme:"system", accent:"heritage", fontSize:18, fontFamily:"serif", esvKey:"", nltKey:"", apiBibleKey:"", apiBibleNivId:"", bibleVersion:"esv", pace:"1yr", senderName:"", readAloudVoice:"am_michael"});
 settings.accent = settings.accent || "heritage";
 let phl       = LS.get(K.hl, {});
 let roster    = LS.get(K.roster, []); // [{id,name,phone,email}]
@@ -1832,12 +1834,12 @@ function renderSettingsAppearance(){
         <div class="lbl" style="margin-bottom:2px;">Color theme</div>
         <div class="desc">Each theme sets its own background, surfaces, and accent colors — not just a tint.</div>
         <div class="accent-grid">
-          <button class="accent-swatch ${settings.accent==='heritage'?'sel':''}" data-accent-opt="heritage" style="background:#FAF7F2;"><span class="dot" style="background:linear-gradient(135deg,#7C2B3F,#C79A3C);"></span>Heritage</button>
-          <button class="accent-swatch ${settings.accent==='forest'?'sel':''}" data-accent-opt="forest" style="background:#F3F6F0;"><span class="dot" style="background:linear-gradient(135deg,#2F5233,#A3B857);"></span>Forest</button>
-          <button class="accent-swatch ${settings.accent==='midnight'?'sel':''}" data-accent-opt="midnight" style="background:#F3F5FB;"><span class="dot" style="background:linear-gradient(135deg,#2B3A67,#8AA4C9);"></span>Midnight</button>
-          <button class="accent-swatch ${settings.accent==='terracotta'?'sel':''}" data-accent-opt="terracotta" style="background:#FBF4EC;"><span class="dot" style="background:linear-gradient(135deg,#A5502F,#9DB088);"></span>Terracotta</button>
-          <button class="accent-swatch ${settings.accent==='vineyard'?'sel':''}" data-accent-opt="vineyard" style="background:#F7F1F5;"><span class="dot" style="background:linear-gradient(135deg,#5B2A4D,#B6905F);"></span>Vineyard</button>
-          <button class="accent-swatch ${settings.accent==='harvest'?'sel':''}" data-accent-opt="harvest" style="background:#FBF6E9;"><span class="dot" style="background:linear-gradient(135deg,#8C5A17,#C79A3C);"></span>Harvest</button>
+          <button class="accent-swatch ${settings.accent==='heritage'?'sel':''}" data-accent-opt="heritage" style="--swatch-light:#FAF7F2;--swatch-dark:#1D1C24;--swatch-dark-ink:#EFEADA;"><span class="dot" style="background:linear-gradient(135deg,#7C2B3F,#C79A3C);"></span>Heritage</button>
+          <button class="accent-swatch ${settings.accent==='forest'?'sel':''}" data-accent-opt="forest" style="--swatch-light:#F3F6F0;--swatch-dark:#1A2017;--swatch-dark-ink:#E8EEDF;"><span class="dot" style="background:linear-gradient(135deg,#2F5233,#A3B857);"></span>Forest</button>
+          <button class="accent-swatch ${settings.accent==='midnight'?'sel':''}" data-accent-opt="midnight" style="--swatch-light:#F3F5FB;--swatch-dark:#171B2C;--swatch-dark-ink:#E4E8F5;"><span class="dot" style="background:linear-gradient(135deg,#2B3A67,#8AA4C9);"></span>Midnight</button>
+          <button class="accent-swatch ${settings.accent==='terracotta'?'sel':''}" data-accent-opt="terracotta" style="--swatch-light:#FBF4EC;--swatch-dark:#251C17;--swatch-dark-ink:#F2E6D8;"><span class="dot" style="background:linear-gradient(135deg,#A5502F,#9DB088);"></span>Terracotta</button>
+          <button class="accent-swatch ${settings.accent==='vineyard'?'sel':''}" data-accent-opt="vineyard" style="--swatch-light:#F7F1F5;--swatch-dark:#20151C;--swatch-dark-ink:#EFE1EA;"><span class="dot" style="background:linear-gradient(135deg,#5B2A4D,#B6905F);"></span>Vineyard</button>
+          <button class="accent-swatch ${settings.accent==='harvest'?'sel':''}" data-accent-opt="harvest" style="--swatch-light:#FBF6E9;--swatch-dark:#211B0E;--swatch-dark-ink:#F2E9CC;"><span class="dot" style="background:linear-gradient(135deg,#8C5A17,#C79A3C);"></span>Harvest</button>
         </div>
       </div>
       <div class="set-row">
@@ -1892,6 +1894,13 @@ function renderSettingsBible(){
           <button class="btn sm ghost" id="testNltKeyBtn">Test connection</button>
         </div>
         <div class="key-status" id="nltKeyStatus"></div>
+      </div>
+      <div class="key-row" style="border-top:1px solid var(--border);">
+        <div class="lbl">Read-aloud voice</div>
+        <div class="desc">A free, on-device AI voice can read each reading aloud — verse numbers and cross-reference markers are always skipped. The voice downloads once (~90MB) the first time you tap Listen, then it's cached; nothing is sent to a server.</div>
+        <div class="theme-opt" style="margin-top:8px;">
+          ${Object.keys(TTS_VOICES).map(k=>`<button data-act="setvoice" data-voice="${k}" class="${(settings.readAloudVoice||'am_michael')===k?'sel':''}">${TTS_VOICES[k]}</button>`).join("")}
+        </div>
       </div>
       <div class="key-row" style="border-top:1px solid var(--border);">
         <div class="lbl">API.Bible key (for NIV)</div>
@@ -2016,6 +2025,7 @@ function openDayModal(n){
 function closeModal(){
   state.viewingDay=null; state.viewingEventId=null; state.editingEventId=null; state.messageModalOpen=false;
   state.eventDetailMode=null; state.createInvitePickerOpen=false; state.readerStack=[];
+  stopTtsPlayback();
   document.getElementById("modalRoot").innerHTML=""; closeXrefPanel(); renderShell();
 }
 
@@ -2026,6 +2036,7 @@ function readingListForDay(day){
 
 function openReader(day, ref){
   closeXrefPanel();
+  stopTtsPlayback();
   state.readerDay = day;
   const root = document.getElementById("modalRoot");
   const versionOptions = VERSION_ORDER.map(c=>`<option value="${c}" ${settings.bibleVersion===c?'selected':''}>${VERSIONS[c].label}</option>`).join("");
@@ -2064,6 +2075,7 @@ function openReader(day, ref){
         <button class="btn sm ${settings.fontFamily==='serif'?'gold':''}" id="fontSerifR">Serif</button>
         <button class="btn sm ${settings.fontFamily==='sans'?'gold':''}" id="fontSansR">Reading</button>
         <span style="flex:1"></span>
+        <button class="btn sm" id="readerListenBtn" title="Listen to this reading"></button>
         ${hasNav?`<button class="icon-btn" id="readerNotesBtn" title="Notes for this reading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l3.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L3 19Z"/></svg></button>`:""}
         <button class="btn sm ghost" id="clearHlBtn">Clear highlights</button>
       </div>
@@ -2098,7 +2110,9 @@ function openReader(day, ref){
     delete phl[key]; saveHl();
     renderVersesFromMemory(ref); toast("Highlights cleared");
   };
-  document.getElementById("readerVersionSelect").onchange = (e)=>{ settings.bibleVersion = e.target.value; saveSettings(); loadPassage(ref); };
+  document.getElementById("readerVersionSelect").onchange = (e)=>{ stopTtsPlayback(); settings.bibleVersion = e.target.value; saveSettings(); loadPassage(ref); };
+  setListenBtnState("idle");
+  document.getElementById("readerListenBtn").onclick = ()=>toggleTtsPlayback(ref);
   const notesBtn = document.getElementById("readerNotesBtn");
   if(notesBtn) notesBtn.onclick = ()=>{ openNoteModal(scheduleDayInfo(day).planDay, {day, ref}); };
 
@@ -2239,6 +2253,135 @@ function renderVersesFromMemory(ref){
     const xrefBtn = (list && list.length) ? `<button class="xref-btn" data-idx="${idx}" title="${list.length} cross reference${list.length===1?'':'s'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 15l6-6M10 6l1-1a3.5 3.5 0 0 1 5 5l-1 1M14 18l-1 1a3.5 3.5 0 0 1-5-5l1-1"/></svg></button>` : "";
     return `<span class="verse ${hlSet.has(idx)?'hl':''}" data-idx="${idx}"><sup class="vnum">${v.label}</sup>${escapeHtml(v.text)}${xrefBtn} </span>`;
   }).join("")+"</p>";
+}
+
+// ---- Read Aloud ----
+// Uses Kokoro (Apache-2.0, onnx-community/Kokoro-82M-v1.0-ONNX), a small open-source neural
+// voice model that runs entirely on-device via WebAssembly — no server, no account, no cost.
+// The model itself (~90MB) downloads once on first use and is cached by the browser after that.
+const TTS_VOICES = { am_michael:"Michael (US)", am_adam:"Adam (US)", bm_george:"George (UK)", bm_lewis:"Lewis (UK)" };
+let ttsEngine = null, ttsEngineLoading = null;
+const ttsState = { playing:false, paused:false, ref:null, chunks:[], chunkIndex:0, token:0, audioEl:null };
+
+function getTtsAudioEl(){
+  if(!ttsState.audioEl){
+    const a = document.createElement("audio");
+    a.id = "ttsAudioEl";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.addEventListener("ended", onTtsChunkEnded);
+    ttsState.audioEl = a;
+  }
+  return ttsState.audioEl;
+}
+
+async function ensureTtsEngine(){
+  if(ttsEngine) return ttsEngine;
+  if(ttsEngineLoading) return ttsEngineLoading;
+  ttsEngineLoading = (async ()=>{
+    const { KokoroTTS } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
+    const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype:"q8", device:"wasm" });
+    ttsEngine = tts;
+    return tts;
+  })();
+  try{ return await ttsEngineLoading; }
+  finally{ ttsEngineLoading = null; }
+}
+
+// Builds speakable chunks directly from the fetched verse data (v.text only) — never from the
+// rendered DOM — so verse numbers and cross-reference markers (which only exist as separate
+// HTML: sup.vnum / .xref-btn) are structurally never part of what gets spoken.
+function buildTtsChunksForRef(ref){
+  const version = settings.bibleVersion;
+  const verses = sessionPassageCache[version+"::"+ref];
+  if(!verses || !verses.length) return [];
+  const chunks = [];
+  let cur = "";
+  verses.forEach(v=>{
+    const t = (v.text||"").trim();
+    if(!t) return;
+    if(cur && (cur.length + t.length + 1) > 350){ chunks.push(cur); cur = t; }
+    else cur = cur ? (cur+" "+t) : t;
+  });
+  if(cur) chunks.push(cur);
+  return chunks;
+}
+
+const TTS_ICONS = {
+  idle: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9v6h4l5 5V4L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>`,
+  loading: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" style="animation:spin 1s linear infinite;"><path d="M12 3a9 9 0 1 0 9 9"/></svg>`,
+  playing: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`
+};
+function setListenBtnState(mode){
+  const btn = document.getElementById("readerListenBtn");
+  if(!btn) return;
+  const icon = mode==="playing" ? TTS_ICONS.playing : mode==="loading" ? TTS_ICONS.loading : TTS_ICONS.idle;
+  const label = mode==="loading" ? "Loading voice…" : mode==="playing" ? "Listening" : mode==="paused" ? "Paused" : "Listen";
+  btn.innerHTML = icon + `<span style="margin-left:5px;">${label}</span>`;
+  btn.classList.toggle("gold", mode==="playing"||mode==="paused");
+}
+
+async function toggleTtsPlayback(ref){
+  const a = getTtsAudioEl();
+  if(ttsState.ref===ref && ttsState.playing && !ttsState.paused){
+    a.pause(); ttsState.paused = true; setListenBtnState("paused"); return;
+  }
+  if(ttsState.ref===ref && ttsState.paused){
+    a.play(); ttsState.paused = false; setListenBtnState("playing"); return;
+  }
+  await startTtsPlayback(ref);
+}
+
+async function startTtsPlayback(ref){
+  stopTtsPlayback();
+  const myToken = ++ttsState.token;
+  const chunks = buildTtsChunksForRef(ref);
+  if(!chunks.length){ toast("Let the passage finish loading, then tap Listen again."); return; }
+  ttsState.ref = ref; ttsState.chunks = chunks; ttsState.chunkIndex = 0; ttsState.playing = true; ttsState.paused = false;
+  setListenBtnState("loading");
+  try{ await ensureTtsEngine(); }
+  catch(e){
+    if(myToken!==ttsState.token) return;
+    toast("Couldn't load the read-aloud voice — check your connection and try again.");
+    ttsState.playing = false; setListenBtnState("idle");
+    return;
+  }
+  if(myToken!==ttsState.token) return; // superseded — reader closed or passage changed mid-load
+  await playTtsChunk(myToken, 0);
+}
+
+async function playTtsChunk(token, idx){
+  if(token!==ttsState.token) return;
+  if(idx>=ttsState.chunks.length){ ttsState.playing=false; setListenBtnState("idle"); return; }
+  setListenBtnState(idx===0?"loading":"playing");
+  const voice = TTS_VOICES[settings.readAloudVoice] ? settings.readAloudVoice : "am_michael";
+  let audio;
+  try{ audio = await ttsEngine.generate(ttsState.chunks[idx], {voice}); }
+  catch(e){
+    if(token!==ttsState.token) return;
+    toast("Read-aloud hit an error generating audio.");
+    ttsState.playing=false; setListenBtnState("idle");
+    return;
+  }
+  if(token!==ttsState.token) return;
+  const url = URL.createObjectURL(audio.toBlob());
+  const a = getTtsAudioEl();
+  a.src = url;
+  ttsState.chunkIndex = idx;
+  a.play();
+  setListenBtnState("playing");
+}
+
+function onTtsChunkEnded(){
+  if(!ttsState.playing) return;
+  playTtsChunk(ttsState.token, ttsState.chunkIndex+1);
+}
+
+function stopTtsPlayback(){
+  ttsState.token++; // invalidates any in-flight generation or scheduled continuation
+  ttsState.playing = false; ttsState.paused = false; ttsState.ref = null; ttsState.chunks = []; ttsState.chunkIndex = 0;
+  if(ttsState.audioEl){ ttsState.audioEl.pause(); ttsState.audioEl.removeAttribute("src"); }
+  setListenBtnState("idle");
 }
 
 // ---- Cross references (Treasury of Scripture Knowledge, via openbible.info CC-BY data) ----
@@ -2674,6 +2817,8 @@ function bindDynamicEvents(root){
         settings.fontSize = Math.max(14, settings.fontSize-2); saveSettings(); renderShell();
       } else if(act==="setversion"){
         settings.bibleVersion = el.dataset.version; saveSettings(); renderShell();
+      } else if(act==="setvoice"){
+        settings.readAloudVoice = el.dataset.voice; saveSettings(); renderShell();
       } else if(act==="beginplan"){
         switchToOnboarding();
       } else if(act==="opennotemodal"){
@@ -3280,7 +3425,7 @@ function bindSettingsEvents(root){
     resetAllBtn.addEventListener("click", ()=>{
       if(confirm("This permanently erases all app data on this device. Continue?")){
         Object.values(K).forEach(k=>localStorage.removeItem(k));
-        startDate=null; progress={}; settings={theme:"system",accent:"heritage",fontSize:18,fontFamily:"serif",esvKey:"",nltKey:"",apiBibleKey:"",apiBibleNivId:"",bibleVersion:"esv",pace:"1yr"}; phl={}; roster=[]; events=[]; state.selectedRoster=new Set();
+        startDate=null; progress={}; settings={theme:"system",accent:"heritage",fontSize:18,fontFamily:"serif",esvKey:"",nltKey:"",apiBibleKey:"",apiBibleNivId:"",bibleVersion:"esv",pace:"1yr",readAloudVoice:"am_michael"}; phl={}; roster=[]; events=[]; state.selectedRoster=new Set();
         applyTheme(); renderShell();
       }
     });
