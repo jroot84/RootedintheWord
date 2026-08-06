@@ -239,6 +239,30 @@ html[data-theme="dark"] .day-begin.done{color:#0F1220;}
 
 .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;}
 .stat{background:var(--surface-2);border-radius:12px;padding:10px 8px;text-align:center;}
+.badge-section-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin:22px 0 10px;}
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:12px 6px;}
+.badge-tile{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:none;padding:2px;text-align:center;-webkit-tap-highlight-color:transparent;}
+.badge-tile:active canvas{transform:scale(.94);}
+.badge-tile canvas{border-radius:50%;transition:transform .12s ease;}
+.badge-tile.locked canvas{filter:saturate(.25) brightness(.85);}
+.badge-tile-label{font-size:10.5px;font-weight:600;color:var(--ink-soft);line-height:1.25;}
+.badge-tile.locked .badge-tile-label{color:var(--ink-faint);}
+.badge-progress-mini{width:80%;height:3px;background:var(--surface-3);border-radius:2px;overflow:hidden;margin-top:1px;}
+.badge-progress-mini>div{height:100%;background:var(--gold);border-radius:2px;}
+.badge-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:6px 4px 4px;}
+.badge-hero canvas{margin-bottom:12px;}
+.badge-hero .badge-cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gold);margin-bottom:6px;}
+.badge-hero h3{margin:0 0 8px;font-family:var(--serif-display);font-size:21px;}
+.badge-hero p{color:var(--ink-soft);font-size:14px;line-height:1.5;max-width:320px;margin:0;}
+.badge-earned-date{font-size:12.5px;color:var(--ink-faint);margin-top:12px;}
+.badge-actions{display:flex;gap:10px;margin-top:20px;width:100%;}
+.badge-toast{position:fixed;left:14px;right:14px;bottom:calc(var(--tabbar-h,64px) + 14px);background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;box-shadow:var(--shadow-md);padding:12px 14px;display:flex;align-items:center;gap:12px;z-index:200;transform:translateY(140%);opacity:0;transition:transform .4s cubic-bezier(.2,.9,.28,1.25),opacity .3s ease;max-width:420px;margin:0 auto;cursor:pointer;}
+.badge-toast.show{transform:translateY(0);opacity:1;}
+.badge-toast canvas{flex:0 0 auto;}
+.badge-toast-body{flex:1;min-width:0;}
+.badge-toast-eyebrow{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gold);}
+.badge-toast-title{font-weight:700;font-size:14.5px;color:var(--ink);}
+.badge-toast-desc{font-size:12px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .stat b{display:block;font-family:var(--serif-display);font-size:20px;}
 .stat span{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
 
@@ -591,7 +615,7 @@ const LS = {
   get(key, fallback){ try{ const v = localStorage.getItem(key); return v===null? fallback : JSON.parse(v); }catch(e){ return fallback; } },
   set(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
 };
-const K = { start:"rootedword.startDate", progress:"rootedword.progress", settings:"rootedword.settings", hl:"rootedword.highlights", roster:"rootedword.roster", events:"rootedword.events", seenSplash:"rootedword.seenSplash" };
+const K = { start:"rootedword.startDate", progress:"rootedword.progress", settings:"rootedword.settings", hl:"rootedword.highlights", roster:"rootedword.roster", events:"rootedword.events", seenSplash:"rootedword.seenSplash", badges:"rootedword.badges", badgesInit:"rootedword.badgesInit" };
 let startDate = LS.get(K.start, null);
 let progress  = LS.get(K.progress, {});
 let settings  = LS.get(K.settings, {theme:"system", accent:"heritage", fontSize:18, fontFamily:"serif", esvKey:"", nltKey:"", apiBibleKey:"", apiBibleNivId:"", bibleVersion:"esv", pace:"1yr", senderName:"", readAloudVoice:""});
@@ -599,13 +623,15 @@ settings.accent = settings.accent || "heritage";
 let phl       = LS.get(K.hl, {});
 let roster    = LS.get(K.roster, []); // [{id,name,phone,email}]
 let events    = LS.get(K.events, []); // [{id,title,date,time,location,notes,attendance:{personId:bool}}]
+let earnedBadges = LS.get(K.badges, {}); // {badgeId: isoDateEarned}
 const sessionPassageCache = {};
 
-function saveProgress(){ LS.set(K.progress, progress); }
+function saveProgress(){ LS.set(K.progress, progress); scheduleBadgeCheck(); }
 function saveSettings(){ LS.set(K.settings, settings); }
-function saveHl(){ LS.set(K.hl, phl); }
-function saveRoster(){ LS.set(K.roster, roster); }
-function saveEvents(){ LS.set(K.events, events); }
+function saveHl(){ LS.set(K.hl, phl); scheduleBadgeCheck(); }
+function saveRoster(){ LS.set(K.roster, roster); scheduleBadgeCheck(); }
+function saveEvents(){ LS.set(K.events, events); scheduleBadgeCheck(); }
+function saveBadges(){ LS.set(K.badges, earnedBadges); }
 
 function getEntry(n){ return progress[n] || {f1:false,f2:false,s1:false,s2:false,note:"",bookmark:false,completedAt:null}; }
 function setEntry(n, patch){
@@ -2931,6 +2957,8 @@ function bindDynamicEvents(root){
         settings.fontSize = Math.max(14, settings.fontSize-2); saveSettings(); renderShell();
       } else if(act==="setversion"){
         settings.bibleVersion = el.dataset.version; saveSettings(); renderShell();
+      } else if(act==="openbadge"){
+        openBadgeModal(el.dataset.badge);
       } else if(act==="beginplan"){
         switchToOnboarding();
       } else if(act==="opennotemodal"){
@@ -3371,12 +3399,500 @@ function openDateEventsModal(dateKey){
   bindDynamicEvents(root);
   navPush(closeModal);
 }
+/* ================= Badges / Achievements ================= */
+
+// -- Book-completion tracking -------------------------------------------------
+// Maps each book abbreviation (as used in BOOK_MAP) to the list of [planDay, key]
+// cells in PLAN that belong to it, so we can tell whether every reading covering
+// that book has been checked off — regardless of 1-year or 2-year pace, since
+// progress is always stored per planDay with f1/f2/s1/s2 flags.
+const REF_KEYS = ["f1","f2","s1","s2"];
+let _bookProgressIdx = null;
+function bookProgressIndex(){
+  if(_bookProgressIdx) return _bookProgressIdx;
+  _bookProgressIdx = {};
+  PLAN.forEach((row,i)=>{
+    const day = i+1;
+    row.forEach((ref,idx)=>{
+      const m = ref.match(/^((?:[1-3]\s)?[A-Za-z]+)\s+/);
+      if(!m) return;
+      const ab = m[1].toLowerCase().trim();
+      (_bookProgressIdx[ab] = _bookProgressIdx[ab] || []).push([day, REF_KEYS[idx]]);
+    });
+  });
+  return _bookProgressIdx;
+}
+function isBookFinished(ab){
+  const list = bookProgressIndex()[ab];
+  if(!list || !list.length) return false;
+  return list.every(([d,k])=> !!getEntry(d)[k]);
+}
+function countFinishedBooksIn(list){ return list.filter(isBookFinished).length; }
+const OT_ABBR = BOOK_ORDER.slice(0,39);
+const NT_ABBR = BOOK_ORDER.slice(39);
+function countFinishedBooksAll(){ return countFinishedBooksIn(BOOK_ORDER); }
+function countJournalEntries(){
+  let c=0;
+  Object.keys(progress).forEach(k=>{ if((progress[k].note||"").trim().length>0) c++; });
+  return c;
+}
+function countHighlightVerses(){
+  let c=0;
+  Object.keys(phl).forEach(k=>{ c += (phl[k]||[]).length; });
+  return c;
+}
+
+// -- Badge catalog -------------------------------------------------------------
+const BADGE_CATS = {
+  streak:     { label:"Streaks",              light:"#ff9a5a", dark:"#b23a12" },
+  milestone:  { label:"Milestones",           light:"#f0c86a", dark:"#8a5a1c" },
+  books:      { label:"Books & Testaments",   light:"#6fb3d9", dark:"#245572" },
+  journal:    { label:"Journal",              light:"#b79bd9", dark:"#4f3570" },
+  highlights: { label:"Highlights",           light:"#f5d675", dark:"#a97a08" },
+  group:      { label:"Group",                light:"#8fd08a", dark:"#2a5e2b" }
+};
+const BADGE_CAT_ORDER = ["streak","milestone","books","journal","highlights","group"];
+const TIER_COLORS = {
+  1:["#c98a4b","#8a5a2c"], // bronze
+  2:["#d7dde3","#9aa4ae"], // silver
+  3:["#ffd873","#c79a3c"], // gold
+  4:["#8be9d0","#2f9e82"]  // emerald
+};
+
+const BADGES = [
+  // Streaks
+  {id:"streak_3",   cat:"streak",    icon:"flame",  tier:1, title:"Spark",                desc:"Read 3 days in a row.", metric:()=>longestStreak(), target:()=>3},
+  {id:"streak_7",   cat:"streak",    icon:"flame",  tier:1, title:"Week of Faith",         desc:"Read 7 days in a row.", metric:()=>longestStreak(), target:()=>7},
+  {id:"streak_14",  cat:"streak",    icon:"flame",  tier:2, title:"Fortnight Faithful",    desc:"Read 14 days in a row.", metric:()=>longestStreak(), target:()=>14},
+  {id:"streak_30",  cat:"streak",    icon:"flame",  tier:2, title:"Steady Month",          desc:"Read 30 days in a row.", metric:()=>longestStreak(), target:()=>30},
+  {id:"streak_90",  cat:"streak",    icon:"flame",  tier:3, title:"Season of Discipline",  desc:"Read 90 days in a row.", metric:()=>longestStreak(), target:()=>90},
+  {id:"streak_180", cat:"streak",    icon:"flame",  tier:3, title:"Half-Year Flame",       desc:"Read 180 days in a row.", metric:()=>longestStreak(), target:()=>180},
+  {id:"streak_365", cat:"streak",    icon:"trophy", tier:4, title:"Unbroken Year",         desc:"Read 365 days in a row — a full year without missing a day.", metric:()=>longestStreak(), target:()=>365},
+
+  // Milestones
+  {id:"welcome",       cat:"milestone", icon:"cross",    tier:1, title:"Rooted",          desc:"Start the M'Cheyne reading plan.", metric:()=>hasStarted()?1:0, target:()=>1},
+  {id:"days_1",        cat:"milestone", icon:"calendar", tier:1, title:"First Steps",     desc:"Complete your first day of reading.", metric:()=>totalCompleteScheduleDays(), target:()=>1},
+  {id:"days_10",       cat:"milestone", icon:"calendar", tier:1, title:"Ten Days In",      desc:"Complete 10 days of reading.", metric:()=>totalCompleteScheduleDays(), target:()=>10},
+  {id:"days_50",       cat:"milestone", icon:"calendar", tier:2, title:"Fifty Strong",     desc:"Complete 50 days of reading.", metric:()=>totalCompleteScheduleDays(), target:()=>50},
+  {id:"days_100",      cat:"milestone", icon:"calendar", tier:2, title:"Triple Digits",    desc:"Complete 100 days of reading.", metric:()=>totalCompleteScheduleDays(), target:()=>100},
+  {id:"days_200",      cat:"milestone", icon:"calendar", tier:3, title:"Deep Roots",       desc:"Complete 200 days of reading.", metric:()=>totalCompleteScheduleDays(), target:()=>200},
+  {id:"plan_complete", cat:"milestone", icon:"trophy",   tier:4, title:"Plan Complete",    desc:"Finish the entire M'Cheyne reading plan.", metric:()=>totalCompleteScheduleDays(), target:()=>totalScheduleDays()},
+
+  // Books & Testaments
+  {id:"book_1",       cat:"books", icon:"book",  tier:1, title:"First Book Finished",       desc:"Complete every reading in one book of the Bible.", metric:countFinishedBooksAll, target:()=>1},
+  {id:"book_5",       cat:"books", icon:"book",  tier:1, title:"Five Books Finished",        desc:"Complete 5 books of the Bible.", metric:countFinishedBooksAll, target:()=>5},
+  {id:"book_15",      cat:"books", icon:"book",  tier:2, title:"Fifteen Books Finished",     desc:"Complete 15 books of the Bible.", metric:countFinishedBooksAll, target:()=>15},
+  {id:"book_30",      cat:"books", icon:"book",  tier:3, title:"Thirty Books Finished",      desc:"Complete 30 books of the Bible.", metric:countFinishedBooksAll, target:()=>30},
+  {id:"ot_complete",  cat:"books", icon:"star",  tier:4, title:"Old Testament Complete",     desc:"Finish every reading in all 39 Old Testament books.", metric:()=>countFinishedBooksIn(OT_ABBR), target:()=>OT_ABBR.length},
+  {id:"nt_complete",  cat:"books", icon:"star",  tier:4, title:"New Testament Complete",     desc:"Finish every reading in all 27 New Testament books.", metric:()=>countFinishedBooksIn(NT_ABBR), target:()=>NT_ABBR.length},
+  {id:"bible_complete",cat:"books", icon:"cross", tier:4, title:"Whole Bible Finished",       desc:"Complete every one of the 66 books of the Bible.", metric:countFinishedBooksAll, target:()=>66},
+
+  // Journal
+  {id:"journal_1",   cat:"journal", icon:"pencil", tier:1, title:"First Entry",  desc:"Write your first journal note.", metric:countJournalEntries, target:()=>1},
+  {id:"journal_10",  cat:"journal", icon:"pencil", tier:1, title:"10 Entries",   desc:"Write notes on 10 different days.", metric:countJournalEntries, target:()=>10},
+  {id:"journal_20",  cat:"journal", icon:"pencil", tier:2, title:"20 Entries",   desc:"Write notes on 20 different days.", metric:countJournalEntries, target:()=>20},
+  {id:"journal_50",  cat:"journal", icon:"pencil", tier:2, title:"50 Entries",   desc:"Write notes on 50 different days.", metric:countJournalEntries, target:()=>50},
+  {id:"journal_100", cat:"journal", icon:"pencil", tier:3, title:"100 Entries",  desc:"Write notes on 100 different days.", metric:countJournalEntries, target:()=>100},
+  {id:"journal_200", cat:"journal", icon:"pencil", tier:3, title:"200 Entries",  desc:"Write notes on 200 different days.", metric:countJournalEntries, target:()=>200},
+  {id:"journal_300", cat:"journal", icon:"trophy", tier:4, title:"300 Entries",  desc:"Write notes on 300 different days — a rich journal of your walk.", metric:countJournalEntries, target:()=>300},
+
+  // Highlights
+  {id:"hl_1",   cat:"highlights", icon:"highlighter", tier:1, title:"First Highlight",         desc:"Highlight your first verse.", metric:countHighlightVerses, target:()=>1},
+  {id:"hl_25",  cat:"highlights", icon:"highlighter", tier:2, title:"25 Verses Highlighted",   desc:"Highlight 25 verses.", metric:countHighlightVerses, target:()=>25},
+  {id:"hl_100", cat:"highlights", icon:"highlighter", tier:3, title:"100 Verses Highlighted",  desc:"Highlight 100 verses.", metric:countHighlightVerses, target:()=>100},
+  {id:"hl_250", cat:"highlights", icon:"star",         tier:4, title:"250 Verses Highlighted", desc:"Highlight 250 verses.", metric:countHighlightVerses, target:()=>250},
+
+  // Group
+  {id:"roster_1",  cat:"group", icon:"people",   tier:1, title:"Community Builder", desc:"Add your first person to the roster.", metric:()=>roster.length, target:()=>1},
+  {id:"roster_5",  cat:"group", icon:"people",   tier:2, title:"Growing Group",     desc:"Add 5 people to your roster.", metric:()=>roster.length, target:()=>5},
+  {id:"meeting_1", cat:"group", icon:"calendar", tier:2, title:"Gathering Planned", desc:"Schedule your first group meeting.", metric:()=>events.length, target:()=>1}
+];
+
+function initBadges(){
+  // First run after this feature ships: silently mark anything already qualifying as
+  // earned (dated today) so a person who's already read 200 days isn't hit with a
+  // flood of toast popups the moment they open the updated app.
+  if(!LS.get(K.badgesInit, false)){
+    let changed = false;
+    BADGES.forEach(b=>{
+      if(!earnedBadges[b.id] && b.metric()>=b.target()){ earnedBadges[b.id] = new Date().toISOString(); changed = true; }
+    });
+    if(changed) saveBadges();
+    LS.set(K.badgesInit, true);
+  }
+}
+let _badgeCheckTimer = null;
+function scheduleBadgeCheck(){ clearTimeout(_badgeCheckTimer); _badgeCheckTimer = setTimeout(checkAndNotifyBadges, 450); }
+function checkAndNotifyBadges(){
+  const newly = [];
+  BADGES.forEach(b=>{
+    if(earnedBadges[b.id]) return;
+    if(b.metric() >= b.target()){ earnedBadges[b.id] = new Date().toISOString(); newly.push(b); }
+  });
+  if(newly.length){ saveBadges(); newly.forEach(queueBadgeToast); }
+}
+
+// -- Icon drawing (canvas primitives, shared by grid tiles / toast / share image) --
+function roundRectPath(ctx,x,y,w,h,rad){
+  ctx.moveTo(x+rad,y);
+  ctx.arcTo(x+w,y,x+w,y+h,rad);
+  ctx.arcTo(x+w,y+h,x,y+h,rad);
+  ctx.arcTo(x,y+h,x,y,rad);
+  ctx.arcTo(x,y,x+w,y,rad);
+  ctx.closePath();
+}
+const ICON_FNS = {
+  flame(ctx,cx,cy,r,color){
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy-r*1.05);
+    ctx.bezierCurveTo(cx+r*0.85,cy-r*0.35, cx+r*0.55,cy+r*0.15, cx+r*0.55,cy+r*0.45);
+    ctx.bezierCurveTo(cx+r*0.55,cy+r*0.85, cx+r*0.2,cy+r*1.05, cx-r*0.15,cy+r*0.95);
+    ctx.bezierCurveTo(cx-r*0.55,cy+r*0.82, cx-r*0.6,cy+r*0.4, cx-r*0.3,cy+r*0.1);
+    ctx.bezierCurveTo(cx-r*0.4,cy+r*0.4, cx-r*0.1,cy+r*0.55, cx-r*0.02,cy+r*0.3);
+    ctx.bezierCurveTo(cx-r*0.25,cy-r*0.1, cx-r*0.1,cy-r*0.65, cx,cy-r*1.05);
+    ctx.closePath();
+    ctx.fill();
+  },
+  calendar(ctx,cx,cy,r,color){
+    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=Math.max(1.5,r*0.15); ctx.lineCap="round"; ctx.lineJoin="round";
+    const w=r*1.5, h=r*1.35, x=cx-w/2, y=cy-h/2+r*0.12;
+    ctx.beginPath(); roundRectPath(ctx,x,y,w,h,r*0.22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x,y+h*0.34); ctx.lineTo(x+w,y+h*0.34); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+w*0.26,y-r*0.16); ctx.lineTo(x+w*0.26,y+r*0.1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+w*0.74,y-r*0.16); ctx.lineTo(x+w*0.74,y+r*0.1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+w*0.26,y+h*0.68); ctx.lineTo(x+w*0.45,y+h*0.86); ctx.lineTo(x+w*0.78,y+h*0.42); ctx.stroke();
+  },
+  book(ctx,cx,cy,r,color){
+    ctx.strokeStyle=color; ctx.lineWidth=Math.max(1.5,r*0.13); ctx.lineCap="round"; ctx.lineJoin="round";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy-r*0.55);
+    ctx.bezierCurveTo(cx-r*0.25,cy-r*0.85, cx-r*0.95,cy-r*0.85, cx-r*0.95,cy-r*0.55);
+    ctx.lineTo(cx-r*0.95, cy+r*0.65);
+    ctx.bezierCurveTo(cx-r*0.95,cy+r*0.4, cx-r*0.25,cy+r*0.35, cx,cy+r*0.65);
+    ctx.bezierCurveTo(cx+r*0.25,cy+r*0.35, cx+r*0.95,cy+r*0.4, cx+r*0.95,cy+r*0.65);
+    ctx.lineTo(cx+r*0.95, cy-r*0.55);
+    ctx.bezierCurveTo(cx+r*0.95,cy-r*0.85, cx+r*0.25,cy-r*0.85, cx,cy-r*0.55);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,cy-r*0.5); ctx.lineTo(cx,cy+r*0.6); ctx.stroke();
+  },
+  pencil(ctx,cx,cy,r,color){
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/4); ctx.fillStyle=color;
+    const w=r*0.5, h=r*1.7;
+    ctx.beginPath();
+    ctx.moveTo(-w/2, -h/2+w*0.5);
+    ctx.lineTo(w/2, -h/2+w*0.5);
+    ctx.lineTo(w/2, h/2-w*0.2);
+    ctx.lineTo(0, h/2+w*0.35);
+    ctx.lineTo(-w/2, h/2-w*0.2);
+    ctx.closePath(); ctx.fill();
+    ctx.globalAlpha=0.85;
+    ctx.fillRect(-w/2,-h/2-w*0.15,w,w*0.5);
+    ctx.globalAlpha=1;
+    ctx.restore();
+  },
+  highlighter(ctx,cx,cy,r,color){
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/4); ctx.fillStyle=color;
+    const w=r*0.78, h=r*1.6;
+    ctx.beginPath();
+    ctx.moveTo(-w/2,-h/2);
+    ctx.lineTo(w/2,-h/2);
+    ctx.lineTo(w/2,h/2-w*0.3);
+    ctx.lineTo(0,h/2+w*0.32);
+    ctx.lineTo(-w/2,h/2-w*0.3);
+    ctx.closePath(); ctx.fill();
+    ctx.globalAlpha=0.55;
+    ctx.fillRect(-w/2,-h*0.06,w,h*0.16);
+    ctx.globalAlpha=1;
+    ctx.restore();
+  },
+  people(ctx,cx,cy,r,color){
+    ctx.fillStyle=color;
+    const off=r*0.4;
+    [-1,1].forEach((s,i)=>{
+      const px = cx+s*off, py=cy-r*0.02;
+      ctx.globalAlpha = i===0?0.8:1;
+      ctx.beginPath(); ctx.arc(px, py-r*0.42, r*0.3, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(px-r*0.42, py+r*0.55);
+      ctx.arc(px, py+r*0.02, r*0.42, Math.PI, 0);
+      ctx.lineTo(px+r*0.42, py+r*0.55);
+      ctx.closePath(); ctx.fill();
+    });
+    ctx.globalAlpha=1;
+  },
+  trophy(ctx,cx,cy,r,color){
+    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=Math.max(1.5,r*0.13); ctx.lineCap="round"; ctx.lineJoin="round";
+    const cupW=r*1.0;
+    ctx.beginPath();
+    ctx.moveTo(cx-cupW/2, cy-r*0.7);
+    ctx.lineTo(cx+cupW/2, cy-r*0.7);
+    ctx.bezierCurveTo(cx+cupW/2, cy+r*0.15, cx+r*0.15, cy+r*0.35, cx, cy+r*0.35);
+    ctx.bezierCurveTo(cx-r*0.15, cy+r*0.35, cx-cupW/2, cy+r*0.15, cx-cupW/2, cy-r*0.7);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx-cupW/2-r*0.16, cy-r*0.38, r*0.26, Math.PI*0.2, Math.PI*1.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx+cupW/2+r*0.16, cy-r*0.38, r*0.26, Math.PI*1.3, Math.PI*2.8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,cy+r*0.35); ctx.lineTo(cx,cy+r*0.58); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-r*0.34,cy+r*0.82); ctx.lineTo(cx+r*0.34,cy+r*0.82); ctx.lineWidth=Math.max(1.5,r*0.16); ctx.stroke();
+  },
+  star(ctx,cx,cy,r,color){
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    for(let i=0;i<10;i++){
+      const ang = -Math.PI/2 + i*Math.PI/5;
+      const rad = i%2===0 ? r : r*0.42;
+      const x = cx+Math.cos(ang)*rad, y=cy+Math.sin(ang)*rad;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath(); ctx.fill();
+  },
+  cross(ctx,cx,cy,r,color){
+    ctx.fillStyle=color;
+    const w=r*0.4, h=r*1.7, hw=r*1.05, hh=r*0.4;
+    ctx.fillRect(cx-w/2, cy-h/2, w, h);
+    ctx.fillRect(cx-hw/2, cy-h*0.26-hh/2, hw, hh);
+  }
+};
+
+// Draws a badge medallion onto a canvas at the given display size (CSS px),
+// scaling the backing store for the device pixel ratio so it stays crisp.
+function drawBadgeCircle(canvas, badge, earned, displaySize){
+  const size = displaySize || parseInt(canvas.getAttribute("width"),10) || 64;
+  const dpr = Math.min(window.devicePixelRatio||1, 3);
+  canvas.width = Math.round(size*dpr); canvas.height = Math.round(size*dpr);
+  canvas.style.width = size+"px"; canvas.style.height = size+"px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,size,size);
+  const cx=size/2, cy=size/2, R=size/2-size*0.045;
+  const tier = TIER_COLORS[badge.tier] || TIER_COLORS[1];
+  const cat = BADGE_CATS[badge.cat];
+
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+  const ringGrad = ctx.createLinearGradient(cx-R,cy-R,cx+R,cy+R);
+  if(earned){ ringGrad.addColorStop(0,tier[0]); ringGrad.addColorStop(1,tier[1]); }
+  else{ ringGrad.addColorStop(0,"#8d8d8d"); ringGrad.addColorStop(1,"#5c5c5c"); }
+  ctx.lineWidth = size*0.07; ctx.strokeStyle = ringGrad; ctx.stroke();
+
+  const innerR = R - size*0.085;
+  ctx.beginPath(); ctx.arc(cx,cy,innerR,0,Math.PI*2);
+  const innerGrad = ctx.createRadialGradient(cx-innerR*0.3,cy-innerR*0.35,innerR*0.15,cx,cy,innerR);
+  if(earned){ innerGrad.addColorStop(0,cat.light); innerGrad.addColorStop(1,cat.dark); }
+  else{ innerGrad.addColorStop(0,"#4a4a4a"); innerGrad.addColorStop(1,"#2a2a2a"); }
+  ctx.fillStyle = innerGrad; ctx.fill();
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,innerR,0,Math.PI*2); ctx.clip();
+  ctx.beginPath(); ctx.arc(cx-innerR*0.28,cy-innerR*0.35,innerR*0.55,0,Math.PI*2);
+  ctx.fillStyle = "rgba(255,255,255,"+(earned?0.18:0.06)+")"; ctx.fill();
+  ctx.restore();
+
+  const fn = ICON_FNS[badge.icon];
+  if(fn) fn(ctx, cx, cy, innerR*0.5, earned ? "#fff" : "rgba(255,255,255,.55)");
+}
+
+function renderBadgesSection(){
+  return BADGE_CAT_ORDER.map(cat=>{
+    const list = BADGES.filter(b=>b.cat===cat);
+    const earnedCount = list.filter(b=>!!earnedBadges[b.id]).length;
+    return `<div class="badge-section-title">${BADGE_CATS[cat].label} (${earnedCount}/${list.length})</div>
+      <div class="badge-grid">
+        ${list.map(b=>{
+          const earned = !!earnedBadges[b.id];
+          const tgt = b.target();
+          const cur = Math.min(b.metric(), tgt);
+          const pct = tgt>0 ? Math.round((cur/tgt)*100) : 0;
+          return `<button class="badge-tile ${earned?'earned':'locked'}" data-act="openbadge" data-badge="${b.id}">
+            <canvas class="badge-canvas" width="64" height="64" data-badge-id="${b.id}"></canvas>
+            <span class="badge-tile-label">${escapeHtml(b.title)}</span>
+            ${!earned?`<div class="badge-progress-mini"><div style="width:${pct}%;"></div></div>`:""}
+          </button>`;
+        }).join("")}
+      </div>`;
+  }).join("");
+}
+function initBadgeCanvases(root){
+  root.querySelectorAll(".badge-canvas").forEach(cv=>{
+    const b = BADGES.find(x=>x.id===cv.dataset.badgeId);
+    if(!b) return;
+    drawBadgeCircle(cv, b, !!earnedBadges[b.id]);
+  });
+}
+
+function openBadgeModal(id){
+  const b = BADGES.find(x=>x.id===id);
+  if(!b) return;
+  const root = document.getElementById("modalRoot");
+  const earned = !!earnedBadges[b.id];
+  const tgt = b.target();
+  const cur = Math.min(b.metric(), tgt);
+  const cat = BADGE_CATS[b.cat];
+  const pct = tgt>0 ? Math.round((cur/tgt)*100) : 0;
+  root.innerHTML = `<div class="modal-scrim" id="scrim">
+    <div class="modal-sheet" style="max-width:420px;">
+      <div class="modal-head">
+        <h3>Badge</h3>
+        <button class="icon-btn" id="closeBadgeModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="badge-hero">
+          <canvas id="badgeHeroCanvas" width="150" height="150"></canvas>
+          <div class="badge-cat">${cat.label}</div>
+          <h3>${escapeHtml(b.title)}</h3>
+          <p>${escapeHtml(b.desc)}</p>
+          ${earned
+            ? `<div class="badge-earned-date">Earned ${niceDate(new Date(earnedBadges[b.id]))}</div>`
+            : `<div class="badge-earned-date">${cur} of ${tgt} — keep going</div>
+               <div class="badge-progress-mini" style="max-width:220px;"><div style="width:${pct}%;"></div></div>`
+          }
+        </div>
+        ${earned ? `
+          <div class="badge-actions">
+            <button class="btn primary" id="shareBadgeBtn" style="flex:1;">Share</button>
+            <button class="btn ghost" id="announceBadgeBtn" style="flex:1;">Tell the group</button>
+          </div>
+        ` : ""}
+      </div>
+    </div>
+  </div>`;
+  drawBadgeCircle(document.getElementById("badgeHeroCanvas"), b, earned, 150);
+  document.getElementById("closeBadgeModal").onclick = navBack;
+  document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") navBack(); });
+  if(earned){
+    document.getElementById("shareBadgeBtn").onclick = ()=>shareBadge(b);
+    document.getElementById("announceBadgeBtn").onclick = ()=>announceBadge(b);
+  }
+  navPush(closeModal);
+}
+
+// -- Toast notification queue (so multiple badges earned at once don't overlap) --
+let badgeToastQueue = [];
+let badgeToastShowing = false;
+function queueBadgeToast(b){
+  badgeToastQueue.push(b);
+  if(!badgeToastShowing) showNextBadgeToast();
+}
+function showNextBadgeToast(){
+  if(!badgeToastQueue.length){ badgeToastShowing=false; return; }
+  badgeToastShowing = true;
+  const b = badgeToastQueue.shift();
+  let el = document.getElementById("badgeToast");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "badgeToast";
+    el.className = "badge-toast";
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<canvas id="badgeToastCanvas" width="52" height="52"></canvas>
+    <div class="badge-toast-body">
+      <div class="badge-toast-eyebrow">Badge earned</div>
+      <div class="badge-toast-title">${escapeHtml(b.title)}</div>
+      <div class="badge-toast-desc">${escapeHtml(b.desc)}</div>
+    </div>`;
+  drawBadgeCircle(document.getElementById("badgeToastCanvas"), b, true, 52);
+  el.onclick = ()=>{
+    clearTimeout(el._hideTimer);
+    el.classList.remove("show");
+    openBadgeModal(b.id);
+    setTimeout(showNextBadgeToast, 350);
+  };
+  requestAnimationFrame(()=>el.classList.add("show"));
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(()=>{
+    el.classList.remove("show");
+    setTimeout(showNextBadgeToast, 350);
+  }, 4200);
+}
+
+// -- Sharing ---------------------------------------------------------------
+function shadeColor(hex, percent){
+  hex = (hex||"#7C2B3F").trim().replace('#','');
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  const num = parseInt(hex,16) || 0;
+  let r=(num>>16)&255, g=(num>>8)&255, b=num&255;
+  r = Math.min(255,Math.max(0, r + Math.round(255*(percent/100))));
+  g = Math.min(255,Math.max(0, g + Math.round(255*(percent/100))));
+  b = Math.min(255,Math.max(0, b + Math.round(255*(percent/100))));
+  return "#" + (0x1000000 + r*0x10000 + g*0x100 + b).toString(16).slice(1);
+}
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight){
+  const words = text.split(" ");
+  let line="", lines=[];
+  words.forEach(w=>{
+    const test = line ? line+" "+w : w;
+    if(ctx.measureText(test).width > maxWidth && line){ lines.push(line); line=w; }
+    else line = test;
+  });
+  if(line) lines.push(line);
+  const startY = y - (lines.length-1)*lineHeight/2;
+  lines.forEach((l,i)=> ctx.fillText(l, x, startY+i*lineHeight));
+  return lines.length;
+}
+function renderBadgeShareImage(b){
+  return new Promise(resolve=>{
+    const size = 1080;
+    const canvas = document.createElement("canvas");
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    const cs = getComputedStyle(document.documentElement);
+    const ribbon = cs.getPropertyValue("--ribbon").trim() || "#7C2B3F";
+    const bg = cs.getPropertyValue("--bg").trim() || "#15141A";
+
+    const g = ctx.createLinearGradient(0,0,size,size);
+    g.addColorStop(0, shadeColor(ribbon,-25));
+    g.addColorStop(1, shadeColor(bg,-8));
+    ctx.fillStyle = g; ctx.fillRect(0,0,size,size);
+
+    const glow = ctx.createRadialGradient(size/2,size*0.36,size*0.04,size/2,size*0.36,size*0.52);
+    glow.addColorStop(0,"rgba(255,255,255,.20)");
+    glow.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.fillStyle = glow; ctx.fillRect(0,0,size,size);
+
+    const badgeCanvas = document.createElement("canvas");
+    drawBadgeCircle(badgeCanvas, b, true, 460);
+    ctx.drawImage(badgeCanvas, size/2-230, size*0.36-230, 460, 460);
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(255,255,255,.82)";
+    ctx.font = "700 28px Arial, sans-serif";
+    ctx.fillText(BADGE_CATS[b.cat].label.toUpperCase(), size/2, size*0.635);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "700 56px Georgia, 'Source Serif 4', serif";
+    wrapCanvasText(ctx, b.title, size/2, size*0.72, size*0.82, 62);
+
+    ctx.font = "400 28px Arial, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,.7)";
+    ctx.fillText(b.desc, size/2, size*0.80, size*0.78);
+
+    ctx.font = "400 26px Arial, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,.6)";
+    const dateStr = earnedBadges[b.id] ? niceDate(new Date(earnedBadges[b.id])) : "";
+    ctx.fillText("Earned "+dateStr+" · Rooted in the Word", size/2, size*0.94);
+
+    canvas.toBlob(blob=>resolve(blob), "image/png", 0.95);
+  });
+}
+async function shareBadge(b){
+  const blob = await renderBadgeShareImage(b);
+  if(!blob){ toast("Couldn't create image"); return; }
+  await saveFile("badge-"+b.id+".png", blob, "image/png");
+}
+function announceBadge(b){
+  state.shareDraft = `I just earned the "${b.title}" badge in Rooted in the Word! ${b.desc}\n\n— ${settings.senderName||"shared from Rooted in the Word"}`;
+  teardownModal();
+  navReplace(()=>{ state.tab="today"; state.groupMode="hub"; renderShell(); });
+  state.tab = "group"; state.groupMode = "message";
+  renderShell();
+}
+
 function openStatsModal(){
   const root = document.getElementById("modalRoot");
   root.innerHTML = `<div class="modal-scrim" id="scrim">
     <div class="modal-sheet">
       <div class="modal-head">
-        <h3>Your Progress</h3>
+        <h3>Progress &amp; Badges</h3>
         <button class="icon-btn" id="closeStatsModal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
       <div class="modal-body">
@@ -3385,11 +3901,14 @@ function openStatsModal(){
           <div class="stat"><b>${currentStreak()}</b><span>Streak</span></div>
           <div class="stat"><b>${longestStreak()}</b><span>Best streak</span></div>
         </div>
+        ${renderBadgesSection()}
       </div>
     </div>
   </div>`;
   document.getElementById("closeStatsModal").onclick = navBack;
   document.getElementById("scrim").addEventListener("click",(e)=>{ if(e.target.id==="scrim") navBack(); });
+  initBadgeCanvases(root);
+  bindDynamicEvents(root);
   navPush(closeModal);
 }
 
@@ -3616,6 +4135,8 @@ function bindSettingsEvents(root){
   });
   document.getElementById("obNotNowBtn").addEventListener("click", switchToApp);
 })();
+
+initBadges();
 
 document.querySelectorAll("nav.tabbar button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
