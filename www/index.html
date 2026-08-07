@@ -256,8 +256,8 @@ html[data-theme="dark"] .day-begin.done{color:#0F1220;}
 .badge-hero p{color:var(--ink-soft);font-size:14px;line-height:1.5;max-width:320px;margin:0;}
 .badge-earned-date{font-size:12.5px;color:var(--ink-faint);margin-top:12px;}
 .badge-actions{display:flex;gap:10px;margin-top:20px;width:100%;}
-.badge-toast{position:fixed;left:14px;right:14px;bottom:calc(var(--tabbar-h,64px) + 14px);background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;box-shadow:var(--shadow-md);padding:12px 14px;display:flex;align-items:center;gap:12px;z-index:200;transform:translateY(140%);opacity:0;transition:transform .4s cubic-bezier(.2,.9,.28,1.25),opacity .3s ease;max-width:420px;margin:0 auto;cursor:pointer;}
-.badge-toast.show{transform:translateY(0);opacity:1;}
+.badge-toast{position:fixed;left:14px;right:14px;bottom:calc(var(--tabbar-h,64px) + 14px);background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;box-shadow:var(--shadow-md);padding:12px 14px;display:flex;align-items:center;gap:12px;z-index:200;transform:translateY(140%);opacity:0;transition:transform .4s cubic-bezier(.2,.9,.28,1.25),opacity .3s ease;max-width:420px;margin:0 auto;cursor:pointer;pointer-events:none;}
+.badge-toast.show{transform:translateY(0);opacity:1;pointer-events:auto;}
 .badge-toast canvas{flex:0 0 auto;}
 .badge-toast-body{flex:1;min-width:0;}
 .badge-toast-eyebrow{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gold);}
@@ -2965,7 +2965,7 @@ function bindDynamicEvents(root){
         openNoteModal(day);
       } else if(act==="sharenote"){
         const e = getEntry(day);
-        state.shareDraft = `Day ${day}${hasStarted()?" ("+niceDateShort(dateForDay(day))+")":""} — ${PLAN[day-1].join(", ")}\n\n${e.note}\n\n— ${settings.senderName||"shared from Rooted in the Word"}`;
+        state.shareDraft = `Rooted in the Word\n\nDay ${day}${hasStarted()?" ("+niceDateShort(dateForDay(day))+")":""} — ${PLAN[day-1].join(", ")}\n\n${e.note}`;
         teardownModal();
         navReplace(()=>{ state.tab="today"; state.groupMode="hub"; renderShell(); });
         state.tab = "group"; state.groupMode = "message";
@@ -2974,7 +2974,7 @@ function bindDynamicEvents(root){
         const ref = el.dataset.ref, version = el.dataset.version;
         const v = VERSIONS[version];
         const count = (phl[version+"::"+ref]||[]).length;
-        state.shareDraft = `A passage worth reading: ${ref} (${v?v.label:version})${count?" — "+count+" verse"+(count===1?"":"s")+" highlighted":""}\n\n— ${settings.senderName||"shared from Rooted in the Word"}`;
+        state.shareDraft = `Rooted in the Word\n\nA passage worth reading: ${ref} (${v?v.label:version})${count?" — "+count+" verse"+(count===1?"":"s")+" highlighted":""}`;
         teardownModal();
         navReplace(()=>{ state.tab="today"; state.groupMode="hub"; renderShell(); });
         state.tab = "group"; state.groupMode = "message";
